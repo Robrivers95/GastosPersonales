@@ -14,14 +14,17 @@
     button { background: #007bff; color: white; border: none; padding: 8px; margin: 5px; }
     table { width: 100%; border-collapse: collapse; margin-top: 20px; }
     th, td { border: 1px solid #ddd; padding: 8px; }
+    .acciones button { margin: 2px; padding: 4px 8px; }
   </style>
 </head>
 <body>
   <!-- Pantalla de Login -->
   <div id="login">
     <h2>Ingresa el PIN</h2>
-    <input type="password" id="pinInput" placeholder="PIN (5351)">
-    <button onclick="checkPIN()">Entrar</button>
+    <form onsubmit="event.preventDefault(); checkPIN()">
+      <input type="password" id="pinInput" placeholder="PIN (5351)" required>
+      <button type="submit">Entrar</button>
+    </form>
   </div>
 
   <!-- Pantalla Principal -->
@@ -98,120 +101,197 @@ function showSection(sectionId) {
 
 // ========== GESTIÓN DE USUARIOS ========== //
 async function addUser() {
-  const name = document.getElementById("newUser").value.trim();
-  if (!name) return;
-  await db.collection("usuarios").add({ nombre: name });
-  document.getElementById("newUser").value = "";
-  cargarUsuarios();
+  try {
+    const name = document.getElementById("newUser").value.trim();
+    if (!name) return;
+    await db.collection("usuarios").add({ nombre: name });
+    document.getElementById("newUser").value = "";
+    cargarUsuarios();
+  } catch (error) {
+    alert(`Error al crear usuario: ${error.message}`);
+  }
 }
 
 async function cargarUsuarios() {
-  const snapshot = await db.collection("usuarios").get();
-  const cont = document.getElementById("usersList");
-  cont.innerHTML = snapshot.docs.map(doc => `
-    <div>${doc.data().nombre} 
-      <button onclick="editarUsuario('${doc.id}', '${doc.data().nombre}')">✏️</button>
-      <button onclick="eliminarUsuario('${doc.id}')">🗑</button>
-      <button onclick="selectedUser = '${doc.data().nombre}'; alert('Usuario seleccionado')">✅</button>
-    </div>
-  `).join('');
-}
-
-async function editarUsuario(id, oldName) {
-  const nuevo = prompt("Nuevo nombre:", oldName);
-  if (nuevo) await db.collection("usuarios").doc(id).update({ nombre: nuevo });
-  cargarUsuarios();
-}
-
-async function eliminarUsuario(id) {
-  if (confirm("¿Eliminar usuario?")) await db.collection("usuarios").doc(id).delete();
-  cargarUsuarios();
+  try {
+    const snapshot = await db.collection("usuarios").get();
+    const cont = document.getElementById("usersList");
+    cont.innerHTML = snapshot.docs.map(doc => `
+      <div>
+        ${doc.data().nombre} 
+        <button class="acciones" onclick="editarUsuario('${doc.id}', '${doc.data().nombre}')">✏️</button>
+        <button class="acciones" onclick="eliminarUsuario('${doc.id}')">🗑</button>
+        <button class="acciones" onclick="selectedUser = '${doc.data().nombre}'; alert('Usuario seleccionado: ${doc.data().nombre}')">✅</button>
+      </div>
+    `).join('');
+  } catch (error) {
+    alert(`Error al cargar usuarios: ${error.message}`);
+  }
 }
 
 // ========== GESTIÓN DE CONCEPTOS ========== //
 async function addConcept() {
-  const name = document.getElementById("newConcept").value.trim();
-  if (!name) return;
-  await db.collection("conceptos").add({ nombre: name });
-  document.getElementById("newConcept").value = "";
-  cargarConceptos();
+  try {
+    const name = document.getElementById("newConcept").value.trim();
+    if (!name) return;
+    await db.collection("conceptos").add({ nombre: name });
+    document.getElementById("newConcept").value = "";
+    cargarConceptos();
+  } catch (error) {
+    alert(`Error al crear concepto: ${error.message}`);
+  }
 }
 
 async function cargarConceptos() {
-  const snapshot = await db.collection("conceptos").get();
-  document.getElementById("conceptList").innerHTML = snapshot.docs.map(doc => `
-    <div>${doc.data().nombre}
-      <button onclick="editarConcepto('${doc.id}', '${doc.data().nombre}')">✏️</button>
-      <button onclick="eliminarConcepto('${doc.id}')">🗑</button>
-    </div>
-  `).join('');
-}
-
-async function editarConcepto(id, oldName) {
-  const nuevo = prompt("Editar concepto:", oldName);
-  if (nuevo) await db.collection("conceptos").doc(id).update({ nombre: nuevo });
-  cargarConceptos();
-}
-
-async function eliminarConcepto(id) {
-  if (confirm("¿Eliminar concepto?")) await db.collection("conceptos").doc(id).delete();
-  cargarConceptos();
+  try {
+    const snapshot = await db.collection("conceptos").get();
+    document.getElementById("conceptList").innerHTML = snapshot.docs.map(doc => `
+      <div>
+        ${doc.data().nombre}
+        <button class="acciones" onclick="editarConcepto('${doc.id}', '${doc.data().nombre}')">✏️</button>
+        <button class="acciones" onclick="eliminarConcepto('${doc.id}')">🗑</button>
+      </div>
+    `).join('');
+  } catch (error) {
+    alert(`Error al cargar conceptos: ${error.message}`);
+  }
 }
 
 // ========== GESTIÓN DE GASTOS ========== //
 async function agregarGasto() {
-  if (!selectedUser) return alert("¡Selecciona un usuario primero!");
-  const texto = document.getElementById("gastoTexto").value.trim();
-  if (!texto) return;
+  try {
+    if (!selectedUser) return alert("¡Selecciona un usuario primero!");
+    const texto = document.getElementById("gastoTexto").value.trim();
+    if (!texto) return;
 
-  // Clasificación con OpenAI
-  const conceptos = (await db.collection("conceptos").get()).docs.map(doc => doc.data().nombre);
-  const prompt = `Clasifica: "${texto}" usando solo estos conceptos: ${conceptos.join(", ")}. Responde SOLO con el concepto.`;
-  
-  const response = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${OPENAI_API_KEY}`,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      model: "gpt-3.5-turbo",
-      messages: [{ role: "user", content: prompt }]
-    })
-  });
+    // Clasificación con OpenAI
+    const conceptos = (await db.collection("conceptos").get()).docs.map(doc => doc.data().nombre);
+    const prompt = `Clasifica: "${texto}" usando solo estos conceptos: ${conceptos.join(", ")}. Responde SOLO con el concepto.`;
+    
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${OPENAI_API_KEY}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        model: "gpt-3.5-turbo",
+        messages: [{ role: "user", content: prompt }]
+      })
+    });
 
-  const data = await response.json();
-  const concepto = data.choices[0].message.content.trim();
-  const monto = parseFloat(texto.match(/\d+/)[0]) || 0;
+    const data = await response.json();
+    if (!data.choices?.[0]?.message?.content) throw new Error("Respuesta de OpenAI inválida");
+    
+    const concepto = data.choices[0].message.content.trim();
+    const monto = parseFloat(texto.match(/\d+/)[0]) || 0;
 
-  await db.collection("gastos").add({
-    concepto,
-    monto,
-    usuario: selectedUser,
-    fecha: new Date().toISOString().split('T')[0],
-    texto
-  });
+    await db.collection("gastos").add({
+      concepto,
+      monto,
+      usuario: selectedUser,
+      fecha: new Date().toISOString().split('T')[0],
+      texto
+    });
 
-  document.getElementById("gastoTexto").value = "";
-  cargarGastos();
+    document.getElementById("gastoTexto").value = "";
+    cargarGastos();
+  } catch (error) {
+    alert(`Error: ${error.message}`);
+  }
 }
 
 async function cargarGastos() {
-  const snapshot = await db.collection("gastos").orderBy("fecha", "desc").get();
-  document.querySelector("#tablaGastos tbody").innerHTML = snapshot.docs.map(doc => `
-    <tr>
-      <td>${doc.data().fecha}</td>
-      <td>${doc.data().concepto}</td>
-      <td>$${doc.data().monto}</td>
-      <td>${doc.data().usuario}</td>
-      <td><button onclick="eliminarGasto('${doc.id}')">🗑</button></td>
-    </tr>
-  `).join('');
+  try {
+    const snapshot = await db.collection("gastos").orderBy("fecha", "desc").get();
+    document.querySelector("#tablaGastos tbody").innerHTML = snapshot.docs.map(doc => `
+      <tr>
+        <td>${doc.data().fecha}</td>
+        <td>${doc.data().concepto}</td>
+        <td>$${doc.data().monto}</td>
+        <td>${doc.data().usuario}</td>
+        <td>
+          <button class="acciones" onclick="editarGasto('${doc.id}')">✏️</button>
+          <button class="acciones" onclick="eliminarGasto('${doc.id}')">🗑</button>
+        </td>
+      </tr>
+    `).join('');
+  } catch (error) {
+    alert(`Error al cargar gastos: ${error.message}`);
+  }
+}
+
+// ========== FUNCIONES DE EDICIÓN ========== //
+async function editarUsuario(id, oldName) {
+  const nuevo = prompt("Nuevo nombre:", oldName);
+  if (nuevo) {
+    try {
+      await db.collection("usuarios").doc(id).update({ nombre: nuevo });
+      cargarUsuarios();
+    } catch (error) {
+      alert(`Error al editar usuario: ${error.message}`);
+    }
+  }
+}
+
+async function eliminarUsuario(id) {
+  if (confirm("¿Eliminar usuario?")) {
+    try {
+      await db.collection("usuarios").doc(id).delete();
+      cargarUsuarios();
+    } catch (error) {
+      alert(`Error al eliminar usuario: ${error.message}`);
+    }
+  }
+}
+
+async function editarConcepto(id, oldName) {
+  const nuevo = prompt("Editar concepto:", oldName);
+  if (nuevo) {
+    try {
+      await db.collection("conceptos").doc(id).update({ nombre: nuevo });
+      cargarConceptos();
+    } catch (error) {
+      alert(`Error al editar concepto: ${error.message}`);
+    }
+  }
+}
+
+async function eliminarConcepto(id) {
+  if (confirm("¿Eliminar concepto?")) {
+    try {
+      await db.collection("conceptos").doc(id).delete();
+      cargarConceptos();
+    } catch (error) {
+      alert(`Error al eliminar concepto: ${error.message}`);
+    }
+  }
+}
+
+async function editarGasto(id) {
+  try {
+    const docRef = await db.collection("gastos").doc(id).get();
+    const data = docRef.data();
+    const nuevoTexto = prompt("Editar descripción:", data.texto);
+    
+    if (nuevoTexto) {
+      await db.collection("gastos").doc(id).update({ texto: nuevoTexto });
+      cargarGastos();
+    }
+  } catch (error) {
+    alert(`Error al editar gasto: ${error.message}`);
+  }
 }
 
 async function eliminarGasto(id) {
-  if (confirm("¿Eliminar gasto?")) await db.collection("gastos").doc(id).delete();
-  cargarGastos();
+  if (confirm("¿Eliminar gasto?")) {
+    try {
+      await db.collection("gastos").doc(id).delete();
+      cargarGastos();
+    } catch (error) {
+      alert(`Error al eliminar gasto: ${error.message}`);
+    }
+  }
 }
 </script>
 </body>
