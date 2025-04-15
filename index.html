@@ -3,19 +3,19 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Gestor de Gastos Inteligente</title>
+  <title>Gestor Inteligente Completo</title>
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
   <style>
     :root {
       --color-primario: #2c3e50;
-      --color-secundario: #007bff;
+      --color-secundario: #1abc9c;
       --fondo: #f8f9fa;
     }
     body {
       font-family: 'Arial', sans-serif;
-      max-width: 800px;
+      max-width: 1000px;
       margin: 20px auto;
       padding: 20px;
       background: var(--fondo);
@@ -26,6 +26,9 @@
       padding: 15px;
       border-radius: 8px;
       margin-bottom: 20px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
     }
     button {
       background: var(--color-secundario);
@@ -39,16 +42,18 @@
     button:hover { opacity: 0.9; }
     input, textarea {
       width: 100%;
-      padding: 10px;
+      padding: 12px;
       margin: 10px 0;
       border: 1px solid #ddd;
       border-radius: 5px;
+      box-sizing: border-box;
     }
     table {
       width: 100%;
       border-collapse: collapse;
       background: white;
       box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      margin-top: 20px;
     }
     th, td {
       padding: 12px;
@@ -56,74 +61,93 @@
       text-align: left;
     }
     th { background: var(--fondo); }
-    .acciones button { margin: 0 5px; padding: 5px 10px; }
     .alerta {
       padding: 15px;
-      margin: 10px 0;
+      margin: 15px 0;
       border-radius: 5px;
       display: none;
     }
     .error { background: #ffebee; color: #d32f2f; }
     .exito { background: #e8f5e9; color: #2e7d32; }
+    .preview-img {
+      max-width: 150px;
+      margin: 10px 0;
+      border-radius: 5px;
+    }
+    .item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px;
+      margin: 5px 0;
+      background: white;
+      border-radius: 5px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
   </style>
 </head>
 <body>
-  <!-- Pantalla de Acceso -->
+  <!-- Acceso -->
   <div id="login">
     <h2>🔐 Acceso al Sistema</h2>
-    <form onsubmit="event.preventDefault(); verificarPIN()">
-      <input type="password" id="inputPIN" placeholder="Ingresa el PIN (5351)" required>
-      <button type="submit">Ingresar</button>
-    </form>
+    <input type="password" id="inputPIN" placeholder="PIN (5351)">
+    <button onclick="verificarPIN()">Ingresar</button>
     <div id="mensajeError" class="alerta error"></div>
   </div>
 
-  <!-- Aplicación Principal -->
+  <!-- Aplicación -->
   <div id="app" class="hidden">
     <div class="topbar">
       <button onclick="mostrarSeccion('usuarios')">👥 Usuarios</button>
       <button onclick="mostrarSeccion('conceptos')">🗃️ Conceptos</button>
-      <button onclick="mostrarSeccion('gastos')">💵 Gastos</button>
+      <button onclick="mostrarSeccion('gastos')">💵 Gastos IA</button>
     </div>
 
-    <!-- Gestión de Usuarios -->
-    <div id="seccionUsuarios" class="seccion">
-      <h3>Administración de Usuarios</h3>
-      <div class="formulario">
-        <input type="text" id="nuevoUsuario" placeholder="Nombre completo">
-        <button onclick="agregarUsuario()">➕ Crear Usuario</button>
-      </div>
-      <div id="listaUsuarios" class="lista"></div>
+    <!-- Sección Usuarios -->
+    <div id="seccionUsuarios">
+      <h3>🧑💼 Administración de Usuarios</h3>
+      <input type="text" id="nuevoUsuario" placeholder="Nombre completo">
+      <button onclick="agregarUsuario()">➕ Crear Usuario</button>
+      <div id="listaUsuarios" style="margin-top: 20px;"></div>
     </div>
 
-    <!-- Gestión de Conceptos -->
-    <div id="seccionConceptos" class="seccion hidden">
-      <h3>Catálogo de Conceptos</h3>
-      <div class="formulario">
-        <input type="text" id="nuevoConcepto" placeholder="Ej: Alimentación">
-        <button onclick="agregarConcepto()">➕ Nuevo Concepto</button>
-      </div>
-      <div id="listaConceptos" class="lista"></div>
+    <!-- Sección Conceptos -->
+    <div id="seccionConceptos" class="hidden">
+      <h3>📂 Gestión de Conceptos</h3>
+      <input type="text" id="nuevoConcepto" placeholder="Nuevo concepto">
+      <button onclick="agregarConcepto()">➕ Agregar Concepto</button>
+      <div id="listaConceptos" style="margin-top: 20px;"></div>
     </div>
 
-    <!-- Registro de Gastos -->
-    <div id="seccionGastos" class="seccion hidden">
-      <h3>Registro de Gastos Inteligente</h3>
-      <div class="formulario">
-        <textarea id="descripcionGasto" placeholder="Ej: 'Compré medicinas por $150 pesos en la farmacia'" rows="3"></textarea>
-        <button onclick="procesarGasto()">🧠 Analizar y Guardar</button>
-      </div>
+    <!-- Sección Gastos con OpenAI -->
+    <div id="seccionGastos" class="hidden">
+      <h3>🤖 Registro Inteligente de Gastos</h3>
+      <textarea id="descripcionGasto" 
+                placeholder="Ej: '15/03 - Compra de materiales $500 en Lerry Merlin para proyecto CasaX - Foto: drive.com/foto1'"
+                rows="4"></textarea>
+      <input type="file" id="fotoGasto" onchange="previewImage(event)">
+      <img id="preview" class="preview-img">
+      <button onclick="procesarConOpenAI()">🧠 Procesar con IA</button>
       <div id="mensajeExito" class="alerta exito"></div>
-      <h4>Historial de Gastos</h4>
-      <table id="tablaGastos">
-        <thead><tr><th>Fecha</th><th>Concepto</th><th>Monto</th><th>Detalle</th><th>Acciones</th></tr></thead>
-        <tbody></tbody>
+      
+      <h4>📅 Historial de Gastos</h4>
+      <table>
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Concepto</th>
+            <th>Monto</th>
+            <th>Proyecto</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="tablaGastos"></tbody>
       </table>
     </div>
   </div>
 
 <script>
-// ================= CONFIGURACIÓN FIREBASE ================= //
+// ================= CONFIGURACIÓN INICIAL ================= //
 const firebaseConfig = {
   apiKey: "AIzaSyC6UgYa0Qb2TTuvlpxU6nEru4LYKUMu8pQ",
   authDomain: "gastospersonales-96004.firebaseapp.com",
@@ -133,10 +157,13 @@ const firebaseConfig = {
   appId: "1:243343663938:web:3482c365b6ce580e3cb969"
 };
 
+const OPENAI_API_KEY = "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";
+
+// Inicializar Firebase
 const app = firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore(app);
-const OPENAI_API_KEY = "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";
-let usuarioSeleccionado = "";
+let usuarioActivo = null;
+let imagenBase64 = null;
 
 // ================= FUNCIONES PRINCIPALES ================= //
 function verificarPIN() {
@@ -154,31 +181,25 @@ function verificarPIN() {
 }
 
 function mostrarSeccion(seccion) {
-  document.querySelectorAll('.seccion').forEach(div => div.classList.add('hidden'));
+  document.querySelectorAll('[id^="seccion"]').forEach(el => el.classList.add('hidden'));
   document.getElementById(`seccion${seccion.charAt(0).toUpperCase() + seccion.slice(1)}`).classList.remove('hidden');
   if (seccion === 'usuarios') cargarUsuarios();
   if (seccion === 'conceptos') cargarConceptos();
   if (seccion === 'gastos') cargarGastos();
 }
 
-// ================= FUNCIONES DE USUARIOS ================= //
+// ================= USUARIOS ================= //
 async function agregarUsuario() {
   const nombre = document.getElementById("nuevoUsuario").value.trim();
-  const mensajeError = document.getElementById("mensajeError");
+  if (!nombre) return mostrarError("⚠️ Ingresa un nombre válido");
   
-  if (!nombre) {
-    mensajeError.textContent = "⚠️ Escribe un nombre válido";
-    mensajeError.style.display = 'block';
-    return;
-  }
-
   try {
     await db.collection("usuarios").add({ nombre });
     document.getElementById("nuevoUsuario").value = "";
-    mostrarMensaje("✅ Usuario creado exitosamente", 'exito');
+    mostrarExito("✅ Usuario creado exitosamente");
     cargarUsuarios();
   } catch (error) {
-    manejarError(`❌ Error al crear usuario: ${error.message}`);
+    mostrarError(`❌ Error: ${error.message}`);
   }
 }
 
@@ -189,153 +210,27 @@ async function cargarUsuarios() {
     lista.innerHTML = snapshot.docs.map(doc => `
       <div class="item">
         <span>${doc.data().nombre}</span>
-        <div class="acciones">
+        <div>
           <button onclick="editarUsuario('${doc.id}', '${doc.data().nombre}')">✏️</button>
           <button onclick="eliminarUsuario('${doc.id}')">🗑</button>
-          <button onclick="seleccionarUsuario('${doc.data().nombre}')">✔️</button>
+          <button onclick="seleccionarUsuario('${doc.data().nombre}')">✔️ Seleccionar</button>
         </div>
       </div>
     `).join('');
   } catch (error) {
-    manejarError(`❌ Error al cargar usuarios: ${error.message}`);
+    mostrarError(`❌ Error al cargar usuarios: ${error.message}`);
   }
 }
 
-// ================= FUNCIONES DE CONCEPTOS ================= //
-async function agregarConcepto() {
-  const nombre = document.getElementById("nuevoConcepto").value.trim();
-  if (!nombre) return manejarError("⚠️ Escribe un nombre para el concepto");
-
-  try {
-    await db.collection("conceptos").add({ nombre });
-    document.getElementById("nuevoConcepto").value = "";
-    mostrarMensaje("✅ Concepto creado exitosamente", 'exito');
-    cargarConceptos();
-  } catch (error) {
-    manejarError(`❌ Error al crear concepto: ${error.message}`);
-  }
-}
-
-async function cargarConceptos() {
-  try {
-    const snapshot = await db.collection("conceptos").get();
-    document.getElementById("listaConceptos").innerHTML = snapshot.docs.map(doc => `
-      <div class="item">
-        <span>${doc.data().nombre}</span>
-        <div class="acciones">
-          <button onclick="editarConcepto('${doc.id}', '${doc.data().nombre}')">✏️</button>
-          <button onclick="eliminarConcepto('${doc.id}')">🗑</button>
-        </div>
-      </div>
-    `).join('');
-  } catch (error) {
-    manejarError(`❌ Error al cargar conceptos: ${error.message}`);
-  }
-}
-
-// ================= FUNCIONES DE GASTOS ================= //
-async function procesarGasto() {
-  const texto = document.getElementById("descripcionGasto").value.trim();
-  const mensajeError = document.getElementById("mensajeError");
-  
-  if (!usuarioSeleccionado) return manejarError("⚠️ Primero selecciona un usuario");
-  if (!texto) return manejarError("⚠️ Describe tu gasto");
-
-  try {
-    // Obtener lista de conceptos
-    const conceptosSnapshot = await db.collection("conceptos").get();
-    const conceptos = conceptosSnapshot.docs.map(doc => doc.data().nombre);
-    if (conceptos.length === 0) return manejarError("⚠️ Crea conceptos primero");
-
-    // Consultar a OpenAI
-    const respuesta = await axios.post(
-      'https://api.openai.com/v1/chat/completions',
-      {
-        model: "gpt-3.5-turbo",
-        messages: [{
-          role: "user",
-          content: `Clasifica este gasto: "${texto}" usando solo estos conceptos: ${conceptos.join(", ")}. Responde SOLO con el concepto.`
-        }],
-        temperature: 0.7
-      },
-      {
-        headers: {
-          'Authorization': `Bearer ${OPENAI_API_KEY}`,
-          'Content-Type': 'application/json'
-        }
-      }
-    );
-
-    const conceptoIA = respuesta.data.choices[0].message.content.trim();
-    const monto = parseFloat(texto.match(/\d+/)[0]) || 0;
-
-    // Guardar en Firebase
-    await db.collection("gastos").add({
-      concepto: conceptoIA,
-      monto: monto,
-      usuario: usuarioSeleccionado,
-      descripcion: texto,
-      fecha: new Date().toISOString().split('T')[0]
-    });
-
-    document.getElementById("descripcionGasto").value = "";
-    mostrarMensaje("✅ Gasto analizado y guardado correctamente", 'exito');
-    cargarGastos();
-
-  } catch (error) {
-    const mensaje = error.response?.data?.error?.message || error.message;
-    manejarError(`❌ Error en OpenAI: ${mensaje}`);
-  }
-}
-
-async function cargarGastos() {
-  try {
-    const snapshot = await db.collection("gastos").orderBy("fecha", "desc").get();
-    document.querySelector("#tablaGastos tbody").innerHTML = snapshot.docs.map(doc => `
-      <tr>
-        <td>${doc.data().fecha}</td>
-        <td>${doc.data().concepto}</td>
-        <td>$${doc.data().monto.toFixed(2)}</td>
-        <td>${doc.data().descripcion}</td>
-        <td>
-          <button onclick="editarGasto('${doc.id}')">✏️</button>
-          <button onclick="eliminarGasto('${doc.id}')">🗑</button>
-        </td>
-      </tr>
-    `).join('');
-  } catch (error) {
-    manejarError(`❌ Error al cargar gastos: ${error.message}`);
-  }
-}
-
-// ================= FUNCIONES AUXILIARES ================= //
-function mostrarMensaje(texto, tipo = 'exito') {
-  const elemento = tipo === 'exito' 
-    ? document.getElementById("mensajeExito")
-    : document.getElementById("mensajeError");
-  
-  elemento.textContent = texto;
-  elemento.style.display = 'block';
-  setTimeout(() => elemento.style.display = 'none', 3000);
-}
-
-function manejarError(mensaje) {
-  const elemento = document.getElementById("mensajeError");
-  elemento.textContent = mensaje;
-  elemento.style.display = 'block';
-  console.error(mensaje);
-}
-
-// ================= FUNCIONES DE EDICIÓN ================= //
 async function editarUsuario(id, nombreActual) {
   const nuevoNombre = prompt("Nuevo nombre:", nombreActual);
   if (nuevoNombre) {
     try {
       await db.collection("usuarios").doc(id).update({ nombre: nuevoNombre });
       cargarUsuarios();
-      mostrarMensaje("✅ Usuario actualizado", 'exito');
+      mostrarExito("✅ Usuario actualizado");
     } catch (error) {
-      manejarError(`❌ Error al editar: ${error.message}`);
+      mostrarError(`❌ Error: ${error.message}`);
     }
   }
 }
@@ -345,27 +240,60 @@ async function eliminarUsuario(id) {
     try {
       await db.collection("usuarios").doc(id).delete();
       cargarUsuarios();
-      mostrarMensaje("✅ Usuario eliminado", 'exito');
+      mostrarExito("✅ Usuario eliminado");
     } catch (error) {
-      manejarError(`❌ Error al eliminar: ${error.message}`);
+      mostrarError(`❌ Error: ${error.message}`);
     }
   }
 }
 
 function seleccionarUsuario(nombre) {
-  usuarioSeleccionado = nombre;
-  mostrarMensaje(`✅ Usuario activo: ${nombre}`, 'exito');
+  usuarioActivo = nombre;
+  mostrarExito(`✅ Usuario activo: ${nombre}`);
 }
-// ================= FUNCIONES DE CONCEPTOS ================= //
+
+// ================= CONCEPTOS ================= //
+async function agregarConcepto() {
+  const nombre = document.getElementById("nuevoConcepto").value.trim();
+  if (!nombre) return mostrarError("⚠️ Ingresa un concepto válido");
+  
+  try {
+    await db.collection("conceptos").add({ nombre });
+    document.getElementById("nuevoConcepto").value = "";
+    mostrarExito("✅ Concepto creado exitosamente");
+    cargarConceptos();
+  } catch (error) {
+    mostrarError(`❌ Error: ${error.message}`);
+  }
+}
+
+async function cargarConceptos() {
+  try {
+    const snapshot = await db.collection("conceptos").get();
+    const lista = document.getElementById("listaConceptos");
+    lista.innerHTML = snapshot.docs.map(doc => `
+      <div class="item">
+        <span>${doc.data().nombre}</span>
+        <div>
+          <button onclick="editarConcepto('${doc.id}', '${doc.data().nombre}')">✏️</button>
+          <button onclick="eliminarConcepto('${doc.id}')">🗑</button>
+        </div>
+      </div>
+    `).join('');
+  } catch (error) {
+    mostrarError(`❌ Error al cargar conceptos: ${error.message}`);
+  }
+}
+
 async function editarConcepto(id, nombreActual) {
   const nuevoNombre = prompt("Editar concepto:", nombreActual);
   if (nuevoNombre) {
     try {
       await db.collection("conceptos").doc(id).update({ nombre: nuevoNombre });
       cargarConceptos();
-      mostrarMensaje("✅ Concepto actualizado", 'exito');
+      mostrarExito("✅ Concepto actualizado");
     } catch (error) {
-      manejarError(`❌ Error al editar: ${error.message}`);
+      mostrarError(`❌ Error: ${error.message}`);
     }
   }
 }
@@ -375,25 +303,97 @@ async function eliminarConcepto(id) {
     try {
       await db.collection("conceptos").doc(id).delete();
       cargarConceptos();
-      mostrarMensaje("✅ Concepto eliminado", 'exito');
+      mostrarExito("✅ Concepto eliminado");
     } catch (error) {
-      manejarError(`❌ Error al eliminar: ${error.message}`);
+      mostrarError(`❌ Error: ${error.message}`);
     }
   }
 }
 
-// ================= FUNCIONES DE GASTOS ================= //
-async function editarGasto(id) {
+// ================= GASTOS CON OPENAI ================= //
+function previewImage(event) {
+  const file = event.target.files[0];
+  const reader = new FileReader();
+  reader.onload = e => {
+    imagenBase64 = e.target.result;
+    document.getElementById("preview").src = imagenBase64;
+  };
+  reader.readAsDataURL(file);
+}
+
+async function procesarConOpenAI() {
+  const texto = document.getElementById("descripcionGasto").value.trim();
+  if (!usuarioActivo) return mostrarError("⚠️ Primero selecciona un usuario");
+  if (!texto) return mostrarError("⚠️ Describe el gasto");
+  
   try {
-    const doc = await db.collection("gastos").doc(id).get();
-    const nuevoTexto = prompt("Editar descripción:", doc.data().descripcion);
-    if (nuevoTexto) {
-      await db.collection("gastos").doc(id).update({ descripcion: nuevoTexto });
-      cargarGastos();
-      mostrarMensaje("✅ Gasto actualizado", 'exito');
+    // Consultar a OpenAI
+    const respuesta = await axios.post(
+      'https://api.openai.com/v1/chat/completions',
+      {
+        model: "gpt-3.5-turbo",
+        messages: [{
+          role: "user",
+          content: `Extrae en formato JSON: { fecha: "dd/mm/aaaa", concepto: "", monto: 0, proyecto: "" } del texto: "${texto}"`
+        }],
+        temperature: 0.3
+      },
+      {
+        headers: {
+          'Authorization': `Bearer ${OPENAI_API_KEY}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+
+    const datos = JSON.parse(respuesta.data.choices[0].message.content);
+    
+    // Validar datos
+    if (!datos.fecha || !datos.concepto || !datos.monto) {
+      throw new Error("La IA no pudo extraer todos los datos requeridos");
     }
+
+    // Guardar en Firebase
+    await db.collection("gastos").add({
+      ...datos,
+      imagen: imagenBase64,
+      usuario: usuarioActivo,
+      timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    });
+
+    // Limpiar formulario
+    document.getElementById("descripcionGasto").value = "";
+    imagenBase64 = null;
+    document.getElementById("preview").src = "";
+    
+    mostrarExito("✅ Gasto procesado correctamente");
+    cargarGastos();
+    
   } catch (error) {
-    manejarError(`❌ Error al editar: ${error.message}`);
+    mostrarError(`❌ Error: ${error.response?.data?.error?.message || error.message}`);
+  }
+}
+
+async function cargarGastos() {
+  try {
+    const snapshot = await db.collection("gastos").orderBy("timestamp", "desc").get();
+    document.getElementById("tablaGastos").innerHTML = snapshot.docs.map(doc => {
+      const data = doc.data();
+      return `
+        <tr>
+          <td>${data.fecha}</td>
+          <td>${data.concepto}</td>
+          <td>$${data.monto}</td>
+          <td>${data.proyecto}</td>
+          <td>
+            ${data.imagen ? `<img src="${data.imagen}" class="preview-img">` : ''}
+            <button onclick="eliminarGasto('${doc.id}')">🗑</button>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  } catch (error) {
+    mostrarError(`❌ Error al cargar gastos: ${error.message}`);
   }
 }
 
@@ -402,11 +402,26 @@ async function eliminarGasto(id) {
     try {
       await db.collection("gastos").doc(id).delete();
       cargarGastos();
-      mostrarMensaje("✅ Gasto eliminado", 'exito');
+      mostrarExito("✅ Gasto eliminado");
     } catch (error) {
-      manejarError(`❌ Error al eliminar: ${error.message}`);
+      mostrarError(`❌ Error: ${error.message}`);
     }
   }
+}
+
+// ================= FUNCIONES AUXILIARES ================= //
+function mostrarError(mensaje) {
+  const elemento = document.getElementById("mensajeError");
+  elemento.textContent = mensaje;
+  elemento.style.display = 'block';
+  setTimeout(() => elemento.style.display = 'none', 5000);
+}
+
+function mostrarExito(mensaje) {
+  const elemento = document.getElementById("mensajeExito");
+  elemento.textContent = mensaje;
+  elemento.style.display = 'block';
+  setTimeout(() => elemento.style.display = 'none', 3000);
 }
 </script>
 </body>
