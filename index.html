@@ -100,14 +100,12 @@
   </div>
 
   <div class="main">
-    <!-- Sección de PIN de acceso -->
     <div class="section active-section" id="login">
       <h2>Ingresar PIN</h2>
       <input type="password" id="pinInput" placeholder="Ingresa PIN">
       <button class="action" onclick="checkPIN()">Entrar</button>
     </div>
 
-    <!-- Sección Usuarios -->
     <div class="section" id="usuarios">
       <h2>Usuarios</h2>
       <input type="text" id="newUser" placeholder="Nombre del usuario">
@@ -116,7 +114,6 @@
       <div><strong>Seleccionado:</strong> <span id="selectedUser"></span></div>
     </div>
 
-    <!-- Sección Conceptos -->
     <div class="section" id="conceptos">
       <h2>Conceptos</h2>
       <input type="text" id="newConcept" placeholder="Nuevo concepto">
@@ -124,7 +121,6 @@
       <div id="conceptList"></div>
     </div>
 
-    <!-- Sección Gastos -->
     <div class="section" id="gastos">
       <h2>Gastos</h2>
       <textarea id="gastoTexto" placeholder="Escribe el gasto..."></textarea>
@@ -132,188 +128,187 @@
       <button class="action" onclick="descargarCSV()">Exportar CSV</button>
       <table id="tablaGastos">
         <thead>
-          <tr><th>Fecha</th><th>Concepto</th><th>Monto</th><th>Usuario</th><th>Acciones</th></tr>
+          <tr><th>Fecha</th><th>Concepto</th><th>Texto</th><th>Usuario</th><th>Acciones</th></tr>
         </thead>
         <tbody></tbody>
       </table>
     </div>
   </div>
 
-<script>
-  const firebaseConfig = {
-    apiKey: "AIzaSyC6UgYa0Qb2TTuvlpxU6nEru4LYKUMu8pQ",
-    authDomain: "gastospersonales-96004.firebaseapp.com",
-    projectId: "gastospersonales-96004",
-    storageBucket: "gastospersonales-96004.appspot.com",
-    messagingSenderId: "243343663938",
-    appId: "1:243343663938:web:3482c365b6ce580e3cb969"
-  };
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
 
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.firestore();
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyC6UgYa0Qb2TTuvlpxU6nEru4LYKUMu8pQ",
+      authDomain: "gastospersonales-96004.firebaseapp.com",
+      projectId: "gastospersonales-96004",
+      storageBucket: "gastospersonales-96004.appspot.com",
+      messagingSenderId: "243343663938",
+      appId: "1:243343663938:web:3482c365b6ce580e3cb969"
+    };
 
-  let selectedUser = "";
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    let selectedUser = "";
 
-  function checkPIN() {
-    const pin = document.getElementById("pinInput").value;
-    if (pin === "5351") {
-      document.getElementById("login").style.display = "none";
-      showSection("usuarios");
-    } else {
-      alert("PIN incorrecto");
+    function checkPIN() {
+      const pin = document.getElementById("pinInput").value;
+      if (pin === "5351") {
+        document.getElementById("login").style.display = "none";
+        showSection("usuarios");
+      } else {
+        alert("PIN incorrecto");
+      }
     }
-  }
 
-  function showSection(id) {
-    document.querySelectorAll(".section").forEach(s => s.style.display = "none");
-    document.getElementById(id).style.display = "block";
-    if (id === "usuarios") cargarUsuarios();
-    if (id === "conceptos") cargarConceptos();
-    if (id === "gastos") cargarGastos();
-  }
+    function showSection(id) {
+      document.querySelectorAll(".section").forEach(s => s.style.display = "none");
+      document.getElementById(id).style.display = "block";
+      if (id === "usuarios") cargarUsuarios();
+      if (id === "conceptos") cargarConceptos();
+      if (id === "gastos") cargarGastos();
+    }
 
-  function addUser() {
-    const name = document.getElementById("newUser").value.trim();
-    if (!name) return;
-    db.collection("usuarios").add({ nombre: name });
-    document.getElementById("newUser").value = "";
-    cargarUsuarios();
-  }
+    function addUser() {
+      const name = document.getElementById("newUser").value.trim();
+      if (!name) return;
+      db.collection("usuarios").add({ nombre: name });
+      document.getElementById("newUser").value = "";
+      cargarUsuarios();
+    }
 
-  function cargarUsuarios() {
-    db.collection("usuarios").get().then(snapshot => {
-      const cont = document.getElementById("usersList");
-      cont.innerHTML = "";
-      snapshot.forEach(doc => {
-        const d = doc.data();
-        const div = document.createElement("div");
-        div.innerHTML = `${d.nombre} <button onclick="editarUsuario('${doc.id}', '${d.nombre}')">✏️</button> <button onclick="eliminarUsuario('${doc.id}')">🗑</button> <button onclick="seleccionarUsuario('${doc.id}', '${d.nombre}')">✅</button>`;
-        cont.appendChild(div);
+    function cargarUsuarios() {
+      db.collection("usuarios").get().then(snapshot => {
+        const cont = document.getElementById("usersList");
+        cont.innerHTML = "";
+        snapshot.forEach(doc => {
+          const d = doc.data();
+          const div = document.createElement("div");
+          div.innerHTML = `${d.nombre} <button onclick="editarUsuario('${doc.id}', '${d.nombre}')">✏️</button> <button onclick="eliminarUsuario('${doc.id}')">🗑</button> <button onclick="seleccionarUsuario('${doc.id}', '${d.nombre}')">✅</button>`;
+          cont.appendChild(div);
+        });
       });
-    });
-  }
+    }
 
-  function editarUsuario(id, oldName) {
-    const nuevo = prompt("Editar nombre:", oldName);
-    if (nuevo) db.collection("usuarios").doc(id).update({ nombre: nuevo }).then(cargarUsuarios);
-  }
+    function editarUsuario(id, oldName) {
+      const nuevo = prompt("Editar nombre:", oldName);
+      if (nuevo) db.collection("usuarios").doc(id).update({ nombre: nuevo }).then(cargarUsuarios);
+    }
 
-  function eliminarUsuario(id) {
-    if (confirm("¿Eliminar usuario?")) db.collection("usuarios").doc(id).delete().then(cargarUsuarios);
-  }
+    function eliminarUsuario(id) {
+      if (confirm("¿Eliminar usuario?")) db.collection("usuarios").doc(id).delete().then(cargarUsuarios);
+    }
 
-  function seleccionarUsuario(id, nombre) {
-    selectedUser = nombre;
-    document.getElementById("selectedUser").innerText = nombre;
-    alert("Usuario seleccionado: " + nombre);
-  }
+    function seleccionarUsuario(id, nombre) {
+      selectedUser = nombre;
+      document.getElementById("selectedUser").innerText = nombre;
+    }
 
-  function addConcept() {
-    const name = document.getElementById("newConcept").value.trim();
-    if (!name) return;
-    db.collection("conceptos").add({ nombre: name });
-    document.getElementById("newConcept").value = "";
-    cargarConceptos();
-  }
+    function addConcept() {
+      const name = document.getElementById("newConcept").value.trim();
+      if (!name) return;
+      db.collection("conceptos").add({ nombre: name });
+      document.getElementById("newConcept").value = "";
+      cargarConceptos();
+    }
 
-  function cargarConceptos() {
-    db.collection("conceptos").get().then(snapshot => {
-      const cont = document.getElementById("conceptList");
-      cont.innerHTML = "";
-      snapshot.forEach(doc => {
-        const d = doc.data();
-        const div = document.createElement("div");
-        div.innerHTML = `${d.nombre} <button onclick="editarConcepto('${doc.id}', '${d.nombre}')">✏️</button> <button onclick="eliminarConcepto('${doc.id}')">🗑</button>`;
-        cont.appendChild(div);
+    function cargarConceptos() {
+      db.collection("conceptos").get().then(snapshot => {
+        const cont = document.getElementById("conceptList");
+        cont.innerHTML = "";
+        snapshot.forEach(doc => {
+          const d = doc.data();
+          const div = document.createElement("div");
+          div.innerHTML = `${d.nombre} <button onclick="editarConcepto('${doc.id}', '${d.nombre}')">✏️</button> <button onclick="eliminarConcepto('${doc.id}')">🗑</button>`;
+          cont.appendChild(div);
+        });
       });
-    });
-  }
+    }
 
-  function editarConcepto(id, oldName) {
-    const nuevo = prompt("Editar concepto:", oldName);
-    if (nuevo) db.collection("conceptos").doc(id).update({ nombre: nuevo }).then(cargarConceptos);
-  }
+    function editarConcepto(id, oldName) {
+      const nuevo = prompt("Editar concepto:", oldName);
+      if (nuevo) db.collection("conceptos").doc(id).update({ nombre: nuevo }).then(cargarConceptos);
+    }
 
-  function eliminarConcepto(id) {
-    if (confirm("¿Eliminar concepto?")) db.collection("conceptos").doc(id).delete().then(cargarConceptos);
-  }
+    function eliminarConcepto(id) {
+      if (confirm("¿Eliminar concepto?")) db.collection("conceptos").doc(id).delete().then(cargarConceptos);
+    }
 
-  async function agregarGasto() {
-    if (!selectedUser) return alert("Selecciona un usuario");
-    const texto = document.getElementById("gastoTexto").value.trim();
-    if (!texto) return;
+    async function agregarGasto() {
+      if (!selectedUser) return alert("Selecciona un usuario");
+      const texto = document.getElementById("gastoTexto").value.trim();
+      if (!texto) return;
 
-    const conceptos = await db.collection("conceptos").get();
-    const lista = conceptos.docs.map(doc => doc.data().nombre);
+      const conceptos = await db.collection("conceptos").get();
+      const lista = conceptos.docs.map(doc => doc.data().nombre);
 
-    const prompt = `Clasifica este texto: "${texto}" usando solo uno de estos conceptos: ${lista.join(", ")}. Devuelve solo el nombre del concepto más apropiado.`;
+      const prompt = `Clasifica este texto: "${texto}" usando solo uno de estos conceptos: ${lista.join(", ")}. Devuelve solo el nombre del concepto más apropiado.`;
 
-    const res = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer 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"
-      },
-      body: JSON.stringify({
-        model: "gpt-3.5-turbo",
-        messages: [{ role: "user", content: prompt }]
-      })
-    });
-
-    const completion = await res.json();
-    const concepto = completion.choices[0].message.content.trim();
-
-    db.collection("gastos").add({
-      texto,
-      concepto,
-      usuario: selectedUser,
-      fecha: new Date().toISOString().split("T")[0]
-    });
-
-    document.getElementById("gastoTexto").value = "";
-    cargarGastos();
-  }
-
-  function cargarGastos() {
-    db.collection("gastos").orderBy("fecha", "desc").get().then(snapshot => {
-      const tbody = document.querySelector("#tablaGastos tbody");
-      tbody.innerHTML = "";
-      snapshot.forEach(doc => {
-        const d = doc.data();
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${d.fecha}</td>
-          <td>${d.concepto}</td>
-          <td>${d.texto}</td>
-          <td>${d.usuario}</td>
-          <td><button onclick="eliminarGasto('${doc.id}')">🗑</button></td>
-        `;
-        tbody.appendChild(tr);
+      const res = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer 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"
+        },
+        body: JSON.stringify({
+          model: "gpt-3.5-turbo",
+          messages: [{ role: "user", content: prompt }]
+        })
       });
-    });
-  }
 
-  function eliminarGasto(id) {
-    if (confirm("¿Eliminar gasto?")) db.collection("gastos").doc(id).delete().then(cargarGastos);
-  }
+      const completion = await res.json();
+      const concepto = completion.choices[0].message.content.trim();
 
-  function descargarCSV() {
-    db.collection("gastos").get().then(snapshot => {
-      let csv = "Fecha,Concepto,Monto,Usuario\n";
-      snapshot.forEach(doc => {
-        const d = doc.data();
-        csv += `${d.fecha},${d.concepto},${d.texto},${d.usuario}\n`;
+      db.collection("gastos").add({
+        texto,
+        concepto,
+        usuario: selectedUser,
+        fecha: new Date().toISOString().split("T")[0]
       });
-      const blob = new Blob([csv], { type: "text/csv" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "gastos.csv";
-      a.click();
-    });
-  }
-</script>
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+
+      document.getElementById("gastoTexto").value = "";
+      cargarGastos();
+    }
+
+    function cargarGastos() {
+      db.collection("gastos").orderBy("fecha", "desc").get().then(snapshot => {
+        const tbody = document.querySelector("#tablaGastos tbody");
+        tbody.innerHTML = "";
+        snapshot.forEach(doc => {
+          const d = doc.data();
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${d.fecha}</td>
+            <td>${d.concepto}</td>
+            <td>${d.texto}</td>
+            <td>${d.usuario}</td>
+            <td><button onclick="eliminarGasto('${doc.id}')">🗑</button></td>
+          `;
+          tbody.appendChild(tr);
+        });
+      });
+    }
+
+    function eliminarGasto(id) {
+      if (confirm("¿Eliminar gasto?")) db.collection("gastos").doc(id).delete().then(cargarGastos);
+    }
+
+    function descargarCSV() {
+      db.collection("gastos").get().then(snapshot => {
+        let csv = "Fecha,Concepto,Texto,Usuario\n";
+        snapshot.forEach(doc => {
+          const d = doc.data();
+          csv += `${d.fecha},${d.concepto},${d.texto},${d.usuario}\n`;
+        });
+        const blob = new Blob([csv], { type: "text/csv" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "gastos.csv";
+        a.click();
+      });
+    }
+  </script>
 </body>
 </html>
