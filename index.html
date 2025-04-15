@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Gastos Personales</title>
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+</head>
+<body>
+  <h1>Gastos Personales</h1>
+
+  <h2>Agregar gasto</h2>
+  <input type="text" id="gastoInput" placeholder="Describe tu gasto">
+  <button onclick="addExpense()">Agregar</button>
+
+  <h2>Conceptos</h2>
+  <input type="text" id="conceptInput" placeholder="Nuevo concepto">
+  <button onclick="addConcept()">Agregar concepto</button>
+  <ul id="conceptList"></ul>
+
+  <h2>Gastos</h2>
+  <ul id="gastoList"></ul>
+  <button onclick="exportCSV()">Exportar CSV</button>
+
+<script>
+async function addConcept() {
+  const name = document.getElementById("conceptInput").value;
+  await axios.post("/api/addConcept", { name });
+  document.getElementById("conceptInput").value = "";
+  loadConcepts();
+}
+
+async function loadConcepts() {
+  const res = await axios.get("/api/getConcepts");
+  const list = document.getElementById("conceptList");
+  list.innerHTML = "";
+  res.data.forEach(c => {
+    const li = document.createElement("li");
+    li.innerText = c.name;
+    list.appendChild(li);
+  });
+}
+
+async function addExpense() {
+  const text = document.getElementById("gastoInput").value;
+  await axios.post("/api/addExpense", { text });
+  document.getElementById("gastoInput").value = "";
+  loadExpenses();
+}
+
+async function loadExpenses() {
+  const res = await axios.get("/api/getExpenses");
+  const list = document.getElementById("gastoList");
+  list.innerHTML = "";
+  res.data.forEach(e => {
+    const li = document.createElement("li");
+    li.innerText = `${e.text} - ${e.concept}`;
+    list.appendChild(li);
+  });
+}
+
+function exportCSV() {
+  window.location = "/api/exportExpensesCSV";
+}
+
+loadConcepts();
+loadExpenses();
+</script>
+</body>
+</html>
