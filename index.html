@@ -1,300 +1,218 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Gastos Personales</title>
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
   <style>
-    body {
-      font-family: 'Segoe UI', sans-serif;
-      background: #f8f9fa;
-      margin: 0;
-      padding-top: 60px;
-    }
-    .topbar {
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 60px;
-      background-color: #2c3e50;
-      display: flex;
-      align-items: center;
-      justify-content: space-around;
-      padding: 0 10px;
-      z-index: 1000;
-    }
-    .topbar button {
-      background: none;
-      border: none;
-      color: white;
-      font-size: 14px;
-      cursor: pointer;
-      padding: 6px;
-    }
-    .topbar button.active {
-      background-color: #1abc9c;
-      border-radius: 8px;
-    }
-    .main {
-      padding: 20px;
-    }
-    .section {
-      display: none;
-      background: #fff;
-      border-radius: 12px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-      padding: 20px;
-      margin-bottom: 30px;
-    }
-    .active-section {
-      display: block;
-    }
-    input, textarea, select {
-      padding: 8px;
-      margin: 5px 0;
-      border-radius: 6px;
-      border: 1px solid #ccc;
-      width: 100%;
-    }
-    button.action {
-      background: #007bff;
-      color: #fff;
-      border: none;
-      padding: 8px 16px;
-      border-radius: 6px;
-      cursor: pointer;
-      margin: 5px 0;
-    }
-    button.action:hover {
-      background: #0056b3;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 10px;
-    }
-    th, td {
-      border: 1px solid #ddd;
-      padding: 6px;
-      text-align: left;
-    }
-    th {
-      background-color: #f1f1f1;
-    }
-    .input-row {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-      gap: 10px;
-      margin-bottom: 10px;
-    }
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    .hidden { display: none; }
+    .topbar { background: #2c3e50; padding: 10px; color: white; }
+    button { background: #007bff; color: white; border: none; padding: 8px; margin: 5px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { border: 1px solid #ddd; padding: 8px; }
   </style>
 </head>
 <body>
-  <div class="topbar">
-    <button onclick="showSection('usuarios')">👤 Usuarios</button>
-    <button onclick="showSection('conceptos')">🗂️ Conceptos</button>
-    <button onclick="showSection('gastos')">💸 Gastos</button>
+  <!-- Pantalla de Login -->
+  <div id="login">
+    <h2>Ingresa el PIN</h2>
+    <input type="password" id="pinInput" placeholder="PIN (5351)">
+    <button onclick="checkPIN()">Entrar</button>
   </div>
 
-  <div class="main">
-    <div class="section active-section" id="login">
-      <h2>Ingresar PIN</h2>
-      <input type="password" id="pinInput" placeholder="Ingresa PIN">
-      <button class="action" onclick="checkPIN()">Entrar</button>
+  <!-- Pantalla Principal -->
+  <div id="app" class="hidden">
+    <div class="topbar">
+      <button onclick="showSection('usuarios')">👤 Usuarios</button>
+      <button onclick="showSection('conceptos')">🗂️ Conceptos</button>
+      <button onclick="showSection('gastos')">💸 Gastos</button>
     </div>
 
-    <div class="section" id="usuarios">
-      <h2>Usuarios</h2>
-      <input type="text" id="newUser" placeholder="Nombre del usuario">
-      <button class="action" onclick="addUser()">Agregar Usuario</button>
+    <!-- Sección Usuarios -->
+    <div id="usuarios" class="section">
+      <h3>Usuarios</h3>
+      <input type="text" id="newUser" placeholder="Nuevo usuario">
+      <button onclick="addUser()">Agregar</button>
       <div id="usersList"></div>
-      <div><strong>Seleccionado:</strong> <span id="selectedUser"></span></div>
     </div>
 
-    <div class="section" id="conceptos">
-      <h2>Conceptos</h2>
+    <!-- Sección Conceptos -->
+    <div id="conceptos" class="section hidden">
+      <h3>Conceptos</h3>
       <input type="text" id="newConcept" placeholder="Nuevo concepto">
-      <button class="action" onclick="addConcept()">Agregar Concepto</button>
+      <button onclick="addConcept()">Agregar</button>
       <div id="conceptList"></div>
     </div>
 
-    <div class="section" id="gastos">
-      <h2>Gastos</h2>
-      <textarea id="gastoTexto" placeholder="Escribe el gasto..."></textarea>
-      <button class="action" onclick="agregarGasto()">Agregar Gasto</button>
-      <button class="action" onclick="descargarCSV()">Exportar CSV</button>
+    <!-- Sección Gastos -->
+    <div id="gastos" class="section hidden">
+      <h3>Registrar Gasto</h3>
+      <textarea id="gastoTexto" placeholder="Ej: Compré pan por $20"></textarea>
+      <button onclick="agregarGasto()">Guardar</button>
       <table id="tablaGastos">
-        <thead>
-          <tr><th>Fecha</th><th>Concepto</th><th>Monto</th><th>Usuario</th><th>Acciones</th></tr>
-        </thead>
+        <thead><tr><th>Fecha</th><th>Concepto</th><th>Monto</th><th>Usuario</th><th>Acciones</th></tr></thead>
         <tbody></tbody>
       </table>
     </div>
   </div>
 
 <script>
-  const firebaseConfig = {
-    apiKey: "AIzaSyC6UgYa0Qb2TTuvlpxU6nEru4LYKUMu8pQ",
-    authDomain: "gastospersonales-96004.firebaseapp.com",
-    projectId: "gastospersonales-96004",
-    storageBucket: "gastospersonales-96004.appspot.com",
-    messagingSenderId: "243343663938",
-    appId: "1:243343663938:web:3482c365b6ce580e3cb969"
-  };
+// ========== CONFIGURACIÓN FIREBASE ========== //
+const firebaseConfig = {
+  apiKey: "AIzaSyC6UgYa0Qb2TTuvlpxU6nEru4LYKUMu8pQ",
+  authDomain: "gastospersonales-96004.firebaseapp.com",
+  projectId: "gastospersonales-96004",
+  storageBucket: "gastospersonales-96004.appspot.com",
+  messagingSenderId: "243343663938",
+  appId: "1:243343663938:web:3482c365b6ce580e3cb969"
+};
 
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.firestore();
+// Inicializar Firebase
+const app = firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore(app);
+let selectedUser = "";
+const OPENAI_API_KEY = "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";
 
-  let selectedUser = "";
-
-  function checkPIN() {
-    const pin = document.getElementById("pinInput").value;
-    if (pin === "5351") {
-      document.getElementById("login").style.display = "none";
-      showSection("usuarios");
-    } else {
-      alert("PIN incorrecto");
-    }
+// ========== FUNCIONES PRINCIPALES ========== //
+function checkPIN() {
+  if (document.getElementById("pinInput").value === "5351") {
+    document.getElementById("login").classList.add("hidden");
+    document.getElementById("app").classList.remove("hidden");
+    showSection('usuarios');
+  } else {
+    alert("PIN incorrecto!");
   }
+}
 
-  function showSection(id) {
-    document.querySelectorAll(".section").forEach(s => s.style.display = "none");
-    document.getElementById(id).style.display = "block";
-    if (id === "usuarios") cargarUsuarios();
-    if (id === "conceptos") cargarConceptos();
-    if (id === "gastos") cargarGastos();
-  }
+function showSection(sectionId) {
+  document.querySelectorAll('.section').forEach(div => div.classList.add('hidden'));
+  document.getElementById(sectionId).classList.remove('hidden');
+  if (sectionId === 'usuarios') cargarUsuarios();
+  if (sectionId === 'conceptos') cargarConceptos();
+  if (sectionId === 'gastos') cargarGastos();
+}
 
-  function addUser() {
-    const name = document.getElementById("newUser").value.trim();
-    if (!name) return;
-    db.collection("usuarios").add({ nombre: name });
-    document.getElementById("newUser").value = "";
-    cargarUsuarios();
-  }
+// ========== GESTIÓN DE USUARIOS ========== //
+async function addUser() {
+  const name = document.getElementById("newUser").value.trim();
+  if (!name) return;
+  await db.collection("usuarios").add({ nombre: name });
+  document.getElementById("newUser").value = "";
+  cargarUsuarios();
+}
 
-  function cargarUsuarios() {
-    db.collection("usuarios").get().then(snapshot => {
-      const cont = document.getElementById("usersList");
-      cont.innerHTML = "";
-      snapshot.forEach(doc => {
-        const d = doc.data();
-        const div = document.createElement("div");
-        div.innerHTML = `${d.nombre} <button onclick="seleccionarUsuario('${doc.id}', '${d.nombre}')">✅</button>`;
-        cont.appendChild(div);
-      });
-    });
-  }
+async function cargarUsuarios() {
+  const snapshot = await db.collection("usuarios").get();
+  const cont = document.getElementById("usersList");
+  cont.innerHTML = snapshot.docs.map(doc => `
+    <div>${doc.data().nombre} 
+      <button onclick="editarUsuario('${doc.id}', '${doc.data().nombre}')">✏️</button>
+      <button onclick="eliminarUsuario('${doc.id}')">🗑</button>
+      <button onclick="selectedUser = '${doc.data().nombre}'; alert('Usuario seleccionado')">✅</button>
+    </div>
+  `).join('');
+}
 
-  function seleccionarUsuario(id, nombre) {
-    selectedUser = nombre;
-    document.getElementById("selectedUser").innerText = nombre;
-  }
+async function editarUsuario(id, oldName) {
+  const nuevo = prompt("Nuevo nombre:", oldName);
+  if (nuevo) await db.collection("usuarios").doc(id).update({ nombre: nuevo });
+  cargarUsuarios();
+}
 
-  function addConcept() {
-    const name = document.getElementById("newConcept").value.trim();
-    if (!name) return;
-    db.collection("conceptos").add({ nombre: name });
-    document.getElementById("newConcept").value = "";
-    cargarConceptos();
-  }
+async function eliminarUsuario(id) {
+  if (confirm("¿Eliminar usuario?")) await db.collection("usuarios").doc(id).delete();
+  cargarUsuarios();
+}
 
-  function cargarConceptos() {
-    db.collection("conceptos").get().then(snapshot => {
-      const cont = document.getElementById("conceptList");
-      cont.innerHTML = "";
-      snapshot.forEach(doc => {
-        const d = doc.data();
-        const div = document.createElement("div");
-        div.innerText = d.nombre;
-        cont.appendChild(div);
-      });
-    });
-  }
+// ========== GESTIÓN DE CONCEPTOS ========== //
+async function addConcept() {
+  const name = document.getElementById("newConcept").value.trim();
+  if (!name) return;
+  await db.collection("conceptos").add({ nombre: name });
+  document.getElementById("newConcept").value = "";
+  cargarConceptos();
+}
 
-  async function agregarGasto() {
-    if (!selectedUser) return alert("Selecciona un usuario");
-    const texto = document.getElementById("gastoTexto").value.trim();
-    if (!texto) return;
+async function cargarConceptos() {
+  const snapshot = await db.collection("conceptos").get();
+  document.getElementById("conceptList").innerHTML = snapshot.docs.map(doc => `
+    <div>${doc.data().nombre}
+      <button onclick="editarConcepto('${doc.id}', '${doc.data().nombre}')">✏️</button>
+      <button onclick="eliminarConcepto('${doc.id}')">🗑</button>
+    </div>
+  `).join('');
+}
 
-    const conceptos = await db.collection("conceptos").get();
-    const lista = conceptos.docs.map(doc => doc.data().nombre);
-    const prompt = `Clasifica este texto: "${texto}" usando solo uno de estos conceptos: ${lista.join(", ")}. Devuelve solo el nombre del concepto más apropiado.`;
+async function editarConcepto(id, oldName) {
+  const nuevo = prompt("Editar concepto:", oldName);
+  if (nuevo) await db.collection("conceptos").doc(id).update({ nombre: nuevo });
+  cargarConceptos();
+}
 
-    try {
-      const res = await fetch("https://api.openai.com/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": "Bearer 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"
-        },
-        body: JSON.stringify({
-          model: "gpt-3.5-turbo",
-          messages: [{ role: "user", content: prompt }]
-        })
-      });
-      const completion = await res.json();
-      const concepto = completion.choices[0].message.content.trim();
+async function eliminarConcepto(id) {
+  if (confirm("¿Eliminar concepto?")) await db.collection("conceptos").doc(id).delete();
+  cargarConceptos();
+}
 
-      db.collection("gastos").add({
-        texto,
-        concepto,
-        usuario: selectedUser,
-        fecha: new Date().toISOString().split("T")[0]
-      });
+// ========== GESTIÓN DE GASTOS ========== //
+async function agregarGasto() {
+  if (!selectedUser) return alert("¡Selecciona un usuario primero!");
+  const texto = document.getElementById("gastoTexto").value.trim();
+  if (!texto) return;
 
-      document.getElementById("gastoTexto").value = "";
-      cargarGastos();
+  // Clasificación con OpenAI
+  const conceptos = (await db.collection("conceptos").get()).docs.map(doc => doc.data().nombre);
+  const prompt = `Clasifica: "${texto}" usando solo estos conceptos: ${conceptos.join(", ")}. Responde SOLO con el concepto.`;
+  
+  const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${OPENAI_API_KEY}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      model: "gpt-3.5-turbo",
+      messages: [{ role: "user", content: prompt }]
+    })
+  });
 
-    } catch (error) {
-      alert("Error con la API de OpenAI. Verifica tu conexión o clave.");
-      console.error(error);
-    }
-  }
+  const data = await response.json();
+  const concepto = data.choices[0].message.content.trim();
+  const monto = parseFloat(texto.match(/\d+/)[0]) || 0;
 
-  function cargarGastos() {
-    db.collection("gastos").orderBy("fecha", "desc").get().then(snapshot => {
-      const tbody = document.querySelector("#tablaGastos tbody");
-      tbody.innerHTML = "";
-      snapshot.forEach(doc => {
-        const d = doc.data();
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${d.fecha}</td>
-          <td>${d.concepto}</td>
-          <td>${d.texto}</td>
-          <td>${d.usuario}</td>
-          <td><button onclick="eliminarGasto('${doc.id}')">🗑</button></td>
-        `;
-        tbody.appendChild(tr);
-      });
-    });
-  }
+  await db.collection("gastos").add({
+    concepto,
+    monto,
+    usuario: selectedUser,
+    fecha: new Date().toISOString().split('T')[0],
+    texto
+  });
 
-  function eliminarGasto(id) {
-    if (confirm("¿Eliminar gasto?")) db.collection("gastos").doc(id).delete().then(cargarGastos);
-  }
+  document.getElementById("gastoTexto").value = "";
+  cargarGastos();
+}
 
-  function descargarCSV() {
-    db.collection("gastos").get().then(snapshot => {
-      let csv = "Fecha,Concepto,Monto,Usuario\n";
-      snapshot.forEach(doc => {
-        const d = doc.data();
-        csv += `${d.fecha},${d.concepto},${d.texto},${d.usuario}\n`;
-      });
-      const blob = new Blob([csv], { type: "text/csv" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "gastos.csv";
-      a.click();
-    });
-  }
+async function cargarGastos() {
+  const snapshot = await db.collection("gastos").orderBy("fecha", "desc").get();
+  document.querySelector("#tablaGastos tbody").innerHTML = snapshot.docs.map(doc => `
+    <tr>
+      <td>${doc.data().fecha}</td>
+      <td>${doc.data().concepto}</td>
+      <td>$${doc.data().monto}</td>
+      <td>${doc.data().usuario}</td>
+      <td><button onclick="eliminarGasto('${doc.id}')">🗑</button></td>
+    </tr>
+  `).join('');
+}
+
+async function eliminarGasto(id) {
+  if (confirm("¿Eliminar gasto?")) await db.collection("gastos").doc(id).delete();
+  cargarGastos();
+}
 </script>
 </body>
 </html>
