@@ -8,19 +8,22 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
   <style>
-    body { font-family: Arial, sans-serif; margin: 20px; }
+    body { font-family: Arial, sans-serif; margin: 20px; background: #f0f0f0; }
     .hidden { display: none; }
-    .topbar { background: #2c3e50; padding: 10px; color: white; }
-    button { background: #007bff; color: white; border: none; padding: 8px; margin: 5px; }
-    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-    th, td { border: 1px solid #ddd; padding: 8px; }
-    .acciones button { margin: 2px; padding: 4px 8px; }
+    .topbar { background: #2c3e50; padding: 10px; color: white; margin-bottom: 20px; }
+    button { background: #007bff; color: white; border: none; padding: 8px 15px; margin: 5px; border-radius: 5px; cursor: pointer; }
+    button:hover { background: #0056b3; }
+    input, textarea { width: 300px; padding: 8px; margin: 5px; border: 1px solid #ddd; border-radius: 5px; }
+    table { width: 100%; border-collapse: collapse; background: white; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+    th { background-color: #f8f9fa; }
+    .acciones button { margin: 0 3px; padding: 4px 8px; font-size: 14px; }
   </style>
 </head>
 <body>
   <!-- Pantalla de Login -->
   <div id="login">
-    <h2>Ingresa el PIN</h2>
+    <h2>🔒 Ingresa el PIN</h2>
     <form onsubmit="event.preventDefault(); checkPIN()">
       <input type="password" id="pinInput" placeholder="PIN (5351)" required>
       <button type="submit">Entrar</button>
@@ -37,25 +40,26 @@
 
     <!-- Sección Usuarios -->
     <div id="usuarios" class="section">
-      <h3>Usuarios</h3>
-      <input type="text" id="newUser" placeholder="Nuevo usuario">
-      <button onclick="addUser()">Agregar</button>
-      <div id="usersList"></div>
+      <h3>👥 Administrar Usuarios</h3>
+      <input type="text" id="newUser" placeholder="Nombre de usuario">
+      <button onclick="addUser()">➕ Agregar</button>
+      <div id="usersList" style="margin-top: 15px;"></div>
     </div>
 
     <!-- Sección Conceptos -->
     <div id="conceptos" class="section hidden">
-      <h3>Conceptos</h3>
+      <h3>📑 Administrar Conceptos</h3>
       <input type="text" id="newConcept" placeholder="Nuevo concepto">
-      <button onclick="addConcept()">Agregar</button>
-      <div id="conceptList"></div>
+      <button onclick="addConcept()">➕ Agregar</button>
+      <div id="conceptList" style="margin-top: 15px;"></div>
     </div>
 
     <!-- Sección Gastos -->
     <div id="gastos" class="section hidden">
-      <h3>Registrar Gasto</h3>
-      <textarea id="gastoTexto" placeholder="Ej: Compré pan por $20"></textarea>
-      <button onclick="agregarGasto()">Guardar</button>
+      <h3>💰 Registrar Gastos</h3>
+      <textarea id="gastoTexto" placeholder="Ej: Compré gasolina por $250 pesos" style="width: 100%; height: 80px;"></textarea>
+      <button onclick="agregarGasto()">💾 Guardar Gasto</button>
+      <h4 style="margin-top: 20px;">📋 Historial de Gastos</h4>
       <table id="tablaGastos">
         <thead><tr><th>Fecha</th><th>Concepto</th><th>Monto</th><th>Usuario</th><th>Acciones</th></tr></thead>
         <tbody></tbody>
@@ -64,7 +68,7 @@
   </div>
 
 <script>
-// ========== CONFIGURACIÓN FIREBASE ========== //
+// ========== CONFIGURACIÓN FIREBASE (NO MODIFICAR) ========== //
 const firebaseConfig = {
   apiKey: "AIzaSyC6UgYa0Qb2TTuvlpxU6nEru4LYKUMu8pQ",
   authDomain: "gastospersonales-96004.firebaseapp.com",
@@ -74,20 +78,20 @@ const firebaseConfig = {
   appId: "1:243343663938:web:3482c365b6ce580e3cb969"
 };
 
-// Inicializar Firebase
 const app = firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore(app);
-let selectedUser = "";
 const OPENAI_API_KEY = "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";
+let selectedUser = "";
 
 // ========== FUNCIONES PRINCIPALES ========== //
 function checkPIN() {
-  if (document.getElementById("pinInput").value === "5351") {
+  const pin = document.getElementById("pinInput").value;
+  if (pin === "5351") {
     document.getElementById("login").classList.add("hidden");
     document.getElementById("app").classList.remove("hidden");
     showSection('usuarios');
   } else {
-    alert("PIN incorrecto!");
+    alert("❌ PIN incorrecto. Intenta nuevamente.");
   }
 }
 
@@ -101,14 +105,15 @@ function showSection(sectionId) {
 
 // ========== GESTIÓN DE USUARIOS ========== //
 async function addUser() {
+  const name = document.getElementById("newUser").value.trim();
+  if (!name) return alert("⚠️ Escribe un nombre de usuario");
   try {
-    const name = document.getElementById("newUser").value.trim();
-    if (!name) return;
     await db.collection("usuarios").add({ nombre: name });
     document.getElementById("newUser").value = "";
     cargarUsuarios();
+    alert("✅ Usuario creado correctamente");
   } catch (error) {
-    alert(`Error al crear usuario: ${error.message}`);
+    alert(`❌ Error al crear usuario: ${error.message}`);
   }
 }
 
@@ -117,28 +122,29 @@ async function cargarUsuarios() {
     const snapshot = await db.collection("usuarios").get();
     const cont = document.getElementById("usersList");
     cont.innerHTML = snapshot.docs.map(doc => `
-      <div>
-        ${doc.data().nombre} 
-        <button class="acciones" onclick="editarUsuario('${doc.id}', '${doc.data().nombre}')">✏️</button>
-        <button class="acciones" onclick="eliminarUsuario('${doc.id}')">🗑</button>
-        <button class="acciones" onclick="selectedUser = '${doc.data().nombre}'; alert('Usuario seleccionado: ${doc.data().nombre}')">✅</button>
+      <div style="margin: 10px 0; padding: 10px; background: #f8f9fa; border-radius: 5px;">
+        ${doc.data().nombre}
+        <button onclick="editarUsuario('${doc.id}', '${doc.data().nombre}')">✏️ Editar</button>
+        <button onclick="eliminarUsuario('${doc.id}')">🗑 Eliminar</button>
+        <button onclick="selectedUser = '${doc.data().nombre}'; alert('✅ Usuario seleccionado: ${doc.data().nombre}')">✔️ Seleccionar</button>
       </div>
     `).join('');
   } catch (error) {
-    alert(`Error al cargar usuarios: ${error.message}`);
+    alert(`❌ Error al cargar usuarios: ${error.message}`);
   }
 }
 
 // ========== GESTIÓN DE CONCEPTOS ========== //
 async function addConcept() {
+  const name = document.getElementById("newConcept").value.trim();
+  if (!name) return alert("⚠️ Escribe un nombre para el concepto");
   try {
-    const name = document.getElementById("newConcept").value.trim();
-    if (!name) return;
     await db.collection("conceptos").add({ nombre: name });
     document.getElementById("newConcept").value = "";
     cargarConceptos();
+    alert("✅ Concepto creado correctamente");
   } catch (error) {
-    alert(`Error al crear concepto: ${error.message}`);
+    alert(`❌ Error al crear concepto: ${error.message}`);
   }
 }
 
@@ -146,28 +152,31 @@ async function cargarConceptos() {
   try {
     const snapshot = await db.collection("conceptos").get();
     document.getElementById("conceptList").innerHTML = snapshot.docs.map(doc => `
-      <div>
+      <div style="margin: 10px 0; padding: 10px; background: #f8f9fa; border-radius: 5px;">
         ${doc.data().nombre}
-        <button class="acciones" onclick="editarConcepto('${doc.id}', '${doc.data().nombre}')">✏️</button>
-        <button class="acciones" onclick="eliminarConcepto('${doc.id}')">🗑</button>
+        <button onclick="editarConcepto('${doc.id}', '${doc.data().nombre}')">✏️ Editar</button>
+        <button onclick="eliminarConcepto('${doc.id}')">🗑 Eliminar</button>
       </div>
     `).join('');
   } catch (error) {
-    alert(`Error al cargar conceptos: ${error.message}`);
+    alert(`❌ Error al cargar conceptos: ${error.message}`);
   }
 }
 
 // ========== GESTIÓN DE GASTOS ========== //
 async function agregarGasto() {
+  if (!selectedUser) return alert("⚠️ Primero selecciona un usuario");
+  const texto = document.getElementById("gastoTexto").value.trim();
+  if (!texto) return alert("⚠️ Escribe una descripción del gasto");
+  
   try {
-    if (!selectedUser) return alert("¡Selecciona un usuario primero!");
-    const texto = document.getElementById("gastoTexto").value.trim();
-    if (!texto) return;
-
-    // Clasificación con OpenAI
-    const conceptos = (await db.collection("conceptos").get()).docs.map(doc => doc.data().nombre);
-    const prompt = `Clasifica: "${texto}" usando solo estos conceptos: ${conceptos.join(", ")}. Responde SOLO con el concepto.`;
+    // Obtener conceptos
+    const conceptosSnapshot = await db.collection("conceptos").get();
+    const conceptos = conceptosSnapshot.docs.map(doc => doc.data().nombre);
+    if (conceptos.length === 0) return alert("⚠️ Primero crea algunos conceptos");
     
+    // Clasificar con IA
+    const prompt = `Clasifica este gasto: "${texto}" usando solo estos conceptos: ${conceptos.join(", ")}. Responde SOLO con el concepto.`;
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -176,16 +185,18 @@ async function agregarGasto() {
       },
       body: JSON.stringify({
         model: "gpt-3.5-turbo",
-        messages: [{ role: "user", content: prompt }]
+        messages: [{ role: "user", content: prompt }],
+        temperature: 0.7
       })
     });
-
-    const data = await response.json();
-    if (!data.choices?.[0]?.message?.content) throw new Error("Respuesta de OpenAI inválida");
     
+    if (!response.ok) throw new Error(`Error de OpenAI: ${response.status}`);
+    
+    const data = await response.json();
     const concepto = data.choices[0].message.content.trim();
     const monto = parseFloat(texto.match(/\d+/)[0]) || 0;
 
+    // Guardar en Firebase
     await db.collection("gastos").add({
       concepto,
       monto,
@@ -193,11 +204,14 @@ async function agregarGasto() {
       fecha: new Date().toISOString().split('T')[0],
       texto
     });
-
+    
     document.getElementById("gastoTexto").value = "";
     cargarGastos();
+    alert("✅ Gasto registrado correctamente");
+    
   } catch (error) {
-    alert(`Error: ${error.message}`);
+    alert(`❌ Error: ${error.message}`);
+    console.error(error);
   }
 }
 
@@ -208,89 +222,93 @@ async function cargarGastos() {
       <tr>
         <td>${doc.data().fecha}</td>
         <td>${doc.data().concepto}</td>
-        <td>$${doc.data().monto}</td>
+        <td>$${doc.data().monto.toFixed(2)}</td>
         <td>${doc.data().usuario}</td>
         <td>
-          <button class="acciones" onclick="editarGasto('${doc.id}')">✏️</button>
-          <button class="acciones" onclick="eliminarGasto('${doc.id}')">🗑</button>
+          <button onclick="editarGasto('${doc.id}')">✏️</button>
+          <button onclick="eliminarGasto('${doc.id}')">🗑</button>
         </td>
       </tr>
     `).join('');
   } catch (error) {
-    alert(`Error al cargar gastos: ${error.message}`);
+    alert(`❌ Error al cargar gastos: ${error.message}`);
   }
 }
 
-// ========== FUNCIONES DE EDICIÓN ========== //
+// ========== FUNCIONES DE EDICIÓN/ELIMINACIÓN ========== //
 async function editarUsuario(id, oldName) {
-  const nuevo = prompt("Nuevo nombre:", oldName);
+  const nuevo = prompt("✏️ Editar usuario:", oldName);
   if (nuevo) {
     try {
       await db.collection("usuarios").doc(id).update({ nombre: nuevo });
       cargarUsuarios();
+      alert("✅ Usuario actualizado");
     } catch (error) {
-      alert(`Error al editar usuario: ${error.message}`);
+      alert(`❌ Error al editar: ${error.message}`);
     }
   }
 }
 
 async function eliminarUsuario(id) {
-  if (confirm("¿Eliminar usuario?")) {
+  if (confirm("¿Seguro que quieres eliminar este usuario?")) {
     try {
       await db.collection("usuarios").doc(id).delete();
       cargarUsuarios();
+      alert("✅ Usuario eliminado");
     } catch (error) {
-      alert(`Error al eliminar usuario: ${error.message}`);
+      alert(`❌ Error al eliminar: ${error.message}`);
     }
   }
 }
 
 async function editarConcepto(id, oldName) {
-  const nuevo = prompt("Editar concepto:", oldName);
+  const nuevo = prompt("✏️ Editar concepto:", oldName);
   if (nuevo) {
     try {
       await db.collection("conceptos").doc(id).update({ nombre: nuevo });
       cargarConceptos();
+      alert("✅ Concepto actualizado");
     } catch (error) {
-      alert(`Error al editar concepto: ${error.message}`);
+      alert(`❌ Error al editar: ${error.message}`);
     }
   }
 }
 
 async function eliminarConcepto(id) {
-  if (confirm("¿Eliminar concepto?")) {
+  if (confirm("¿Seguro que quieres eliminar este concepto?")) {
     try {
       await db.collection("conceptos").doc(id).delete();
       cargarConceptos();
+      alert("✅ Concepto eliminado");
     } catch (error) {
-      alert(`Error al eliminar concepto: ${error.message}`);
+      alert(`❌ Error al eliminar: ${error.message}`);
+    }
+  }
+}
+
+async function eliminarGasto(id) {
+  if (confirm("¿Seguro que quieres eliminar este gasto?")) {
+    try {
+      await db.collection("gastos").doc(id).delete();
+      cargarGastos();
+      alert("✅ Gasto eliminado");
+    } catch (error) {
+      alert(`❌ Error al eliminar: ${error.message}`);
     }
   }
 }
 
 async function editarGasto(id) {
   try {
-    const docRef = await db.collection("gastos").doc(id).get();
-    const data = docRef.data();
-    const nuevoTexto = prompt("Editar descripción:", data.texto);
-    
+    const doc = await db.collection("gastos").doc(id).get();
+    const nuevoTexto = prompt("✏️ Editar descripción del gasto:", doc.data().texto);
     if (nuevoTexto) {
       await db.collection("gastos").doc(id).update({ texto: nuevoTexto });
       cargarGastos();
+      alert("✅ Gasto actualizado");
     }
   } catch (error) {
-    alert(`Error al editar gasto: ${error.message}`);
-  }
-}
-
-async function eliminarGasto(id) {
-  if (confirm("¿Eliminar gasto?")) {
-    try {
-      await db.collection("gastos").doc(id).delete();
-      cargarGastos();
-    } catch (error) {
-      alert(`Error al eliminar gasto: ${error.message}`);
-    }
+    alert(`❌ Error al editar: ${error.message}`);
   }
 }
 </script>
