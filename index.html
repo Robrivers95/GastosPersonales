@@ -1,69 +1,265 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Gastos Personales</title>
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f5f5f5;
+      margin: 0;
+      padding: 20px;
+    }
+    #login, #app {
+      max-width: 500px;
+      margin: auto;
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    h1 {
+      text-align: center;
+    }
+    input, textarea, select, button {
+      width: 100%;
+      padding: 10px;
+      margin: 5px 0 10px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 16px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      font-size: 14px;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      padding: 6px;
+      text-align: left;
+    }
+    .actions button {
+      width: auto;
+      margin-right: 5px;
+    }
+    canvas {
+      margin-top: 20px;
+    }
+  </style>
 </head>
 <body>
-  <h1>Gastos Personales</h1>
+  <div id="login">
+    <h1>Gastos Personales</h1>
+    <input type="password" id="pinInput" placeholder="Ingresa el PIN">
+    <button onclick="checkPIN()">Entrar</button>
+  </div>
 
-  <h2>Agregar gasto</h2>
-  <input type="text" id="gastoInput" placeholder="Describe tu gasto">
-  <button onclick="addExpense()">Agregar</button>
+  <div id="app" style="display:none">
+    <h2>Bienvenido</h2>
+    <select id="userSelect"></select>
+    <textarea id="gastoInput" placeholder="Escribe o dicta el gasto..."></textarea>
+    <button onclick="agregarGasto()">Agregar Gasto</button>
 
-  <h2>Conceptos</h2>
-  <input type="text" id="conceptInput" placeholder="Nuevo concepto">
-  <button onclick="addConcept()">Agregar concepto</button>
-  <ul id="conceptList"></ul>
+    <h3>Conceptos</h3>
+    <input type="text" id="nuevoConcepto" placeholder="Nuevo concepto">
+    <button onclick="agregarConcepto()">Agregar Concepto</button>
+    <ul id="conceptosList"></ul>
 
-  <h2>Gastos</h2>
-  <ul id="gastoList"></ul>
-  <button onclick="exportCSV()">Exportar CSV</button>
+    <h3>Gastos Registrados</h3>
+    <button onclick="exportarCSV()">Exportar CSV</button>
+    <table id="tablaGastos">
+      <thead>
+        <tr><th>Fecha</th><th>Usuario</th><th>Concepto</th><th>Monto</th><th>Texto</th><th>Acciones</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
 
-<script>
-async function addConcept() {
-  const name = document.getElementById("conceptInput").value;
-  await axios.post("/api/addConcept", { name });
-  document.getElementById("conceptInput").value = "";
-  loadConcepts();
+    <canvas id="grafica" height="200"></canvas>
+  </div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyD8aw4rOTXWpBNI3aPrVbAwKjcTgYJ0ECw",
+      authDomain: "gastospersonales-96004.firebaseapp.com",
+      projectId: "gastospersonales-96004",
+      storageBucket: "gastospersonales-96004.appspot.com",
+      messagingSenderId: "764171638300",
+      appId: "1:764171638300:web:88d8f6484c8426f6a279a0"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    const OPENAI_API_KEY = "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";
+
+    let usuarios = [];
+    let conceptos = [];
+    let usuarioActual = "";
+
+    function checkPIN() {
+      const pin = document.getElementById("pinInput").value;
+      if (pin === "5351") {
+        document.getElementById("login").style.display = "none";
+        document.getElementById("app").style.display = "block";
+        cargarUsuarios();
+        cargarConceptos();
+        cargarGastos();
+      } else {
+        alert("PIN incorrecto");
+      }
+    }
+
+    async function cargarUsuarios() {
+      const snapshot = await db.collection("usuarios").get();
+      const select = document.getElementById("userSelect");
+      select.innerHTML = "";
+      snapshot.forEach(doc => {
+        const u = doc.data().nombre;
+        usuarios.push(u);
+        const opt = document.createElement("option");
+        opt.value = u;
+        opt.innerText = u;
+        select.appendChild(opt);
+      });
+      usuarioActual = select.value;
+      select.onchange = () => usuarioActual = select.value;
+    }
+
+    async function cargarConceptos() {
+      const snapshot = await db.collection("conceptos").get();
+      conceptos = [];
+      document.getElementById("conceptosList").innerHTML = "";
+      snapshot.forEach(doc => {
+        const nombre = doc.data().nombre;
+        conceptos.push(nombre);
+        const li = document.createElement("li");
+        li.innerHTML = `${nombre} <button onclick="eliminarConcepto('${doc.id}')">❌</button>`;
+        document.getElementById("conceptosList").appendChild(li);
+      });
+    }
+
+    async function agregarConcepto() {
+      const nombre = document.getElementById("nuevoConcepto").value.trim();
+      if (!nombre) return;
+      await db.collection("conceptos").add({ nombre });
+      document.getElementById("nuevoConcepto").value = "";
+      cargarConceptos();
+    }
+
+    async function eliminarConcepto(id) {
+      await db.collection("conceptos").doc(id).delete();
+      cargarConceptos();
+    }
+
+    async function agregarGasto() {
+      const texto = document.getElementById("gastoInput").value.trim();
+      if (!texto || !usuarioActual) return alert("Falta texto o usuario");
+
+      const prompt = `Clasifica este gasto según estos conceptos: ${conceptos.join(", ")}. Devuelve solo el concepto y el monto en JSON:
+{
+  "concepto": "",
+  "monto": 0
 }
+Texto: "${texto}"`;
 
-async function loadConcepts() {
-  const res = await axios.get("/api/getConcepts");
-  const list = document.getElementById("conceptList");
-  list.innerHTML = "";
-  res.data.forEach(c => {
-    const li = document.createElement("li");
-    li.innerText = c.name;
-    list.appendChild(li);
-  });
-}
+      const res = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${OPENAI_API_KEY}`
+        },
+        body: JSON.stringify({
+          model: "gpt-3.5-turbo",
+          messages: [{ role: "user", content: prompt }]
+        })
+      });
+      const json = await res.json();
+      const datos = JSON.parse(json.choices[0].message.content || "{}");
 
-async function addExpense() {
-  const text = document.getElementById("gastoInput").value;
-  await axios.post("/api/addExpense", { text });
-  document.getElementById("gastoInput").value = "";
-  loadExpenses();
-}
+      if (!datos.concepto || !datos.monto) return alert("No se pudo clasificar el gasto");
 
-async function loadExpenses() {
-  const res = await axios.get("/api/getExpenses");
-  const list = document.getElementById("gastoList");
-  list.innerHTML = "";
-  res.data.forEach(e => {
-    const li = document.createElement("li");
-    li.innerText = `${e.text} - ${e.concept}`;
-    list.appendChild(li);
-  });
-}
+      await db.collection("gastos").add({
+        usuario: usuarioActual,
+        texto,
+        concepto: datos.concepto,
+        monto: parseFloat(datos.monto),
+        fecha: new Date().toISOString()
+      });
 
-function exportCSV() {
-  window.location = "/api/exportExpensesCSV";
-}
+      document.getElementById("gastoInput").value = "";
+      cargarGastos();
+    }
 
-loadConcepts();
-loadExpenses();
-</script>
+    async function cargarGastos() {
+      const snapshot = await db.collection("gastos").orderBy("fecha", "desc").get();
+      const tbody = document.querySelector("#tablaGastos tbody");
+      tbody.innerHTML = "";
+      const resumen = {};
+      snapshot.forEach(doc => {
+        const d = doc.data();
+        if (!resumen[d.concepto]) resumen[d.concepto] = 0;
+        resumen[d.concepto] += d.monto;
+
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${d.fecha.split("T")[0]}</td>
+          <td>${d.usuario}</td>
+          <td>${d.concepto}</td>
+          <td>${d.monto}</td>
+          <td>${d.texto}</td>
+          <td class="actions">
+            <button onclick="eliminarGasto('${doc.id}')">🗑</button>
+          </td>`;
+        tbody.appendChild(tr);
+      });
+
+      mostrarGrafica(resumen);
+    }
+
+    async function eliminarGasto(id) {
+      if (confirm("¿Eliminar gasto?")) {
+        await db.collection("gastos").doc(id).delete();
+        cargarGastos();
+      }
+    }
+
+    function exportarCSV() {
+      const filas = [["Fecha", "Usuario", "Concepto", "Monto", "Texto"]];
+      document.querySelectorAll("#tablaGastos tbody tr").forEach(tr => {
+        const cols = [...tr.querySelectorAll("td")].map(td => td.innerText);
+        filas.push(cols.slice(0, 5));
+      });
+      let csv = filas.map(r => r.join(",")).join("\n");
+      const blob = new Blob([csv], { type: "text/csv" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = "gastos.csv";
+      link.click();
+    }
+
+    function mostrarGrafica(resumen) {
+      const ctx = document.getElementById("grafica").getContext("2d");
+      if (window.graficaRef) window.graficaRef.destroy();
+      window.graficaRef = new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels: Object.keys(resumen),
+          datasets: [{
+            label: "Gastos por concepto",
+            data: Object.values(resumen),
+            backgroundColor: "#007bff"
+          }]
+        },
+        options: { responsive: true, scales: { y: { beginAtZero: true } } }
+      });
+    }
+  </script>
 </body>
 </html>
+
