@@ -2,264 +2,318 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Gastos Personales</title>
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
   <style>
     body {
-      font-family: Arial, sans-serif;
-      background: #f5f5f5;
+      font-family: 'Segoe UI', sans-serif;
+      background: #f8f9fa;
       margin: 0;
+      padding-top: 60px;
+    }
+    .topbar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 60px;
+      background-color: #2c3e50;
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      padding: 0 10px;
+      z-index: 1000;
+    }
+    .topbar button {
+      background: none;
+      border: none;
+      color: white;
+      font-size: 14px;
+      cursor: pointer;
+      padding: 6px;
+    }
+    .topbar button.active {
+      background-color: #1abc9c;
+      border-radius: 8px;
+    }
+    .main {
       padding: 20px;
     }
-    #login, #app {
-      max-width: 500px;
-      margin: auto;
-      background: white;
+    .section {
+      display: none;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
       padding: 20px;
-      border-radius: 10px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      margin-bottom: 30px;
     }
-    h1 {
-      text-align: center;
+    .active-section {
+      display: block;
     }
-    input, textarea, select, button {
-      width: 100%;
-      padding: 10px;
-      margin: 5px 0 10px;
+    input, textarea, select {
+      padding: 8px;
+      margin: 5px 0;
       border-radius: 6px;
       border: 1px solid #ccc;
-      font-size: 16px;
+      width: 100%;
+    }
+    button.action {
+      background: #007bff;
+      color: #fff;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      margin: 5px 0;
+    }
+    button.action:hover {
+      background: #0056b3;
     }
     table {
       width: 100%;
       border-collapse: collapse;
       margin-top: 10px;
-      font-size: 14px;
     }
     th, td {
-      border: 1px solid #ccc;
+      border: 1px solid #ddd;
       padding: 6px;
       text-align: left;
     }
-    .actions button {
-      width: auto;
-      margin-right: 5px;
+    th {
+      background-color: #f1f1f1;
     }
-    canvas {
-      margin-top: 20px;
+    .input-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 10px;
+      margin-bottom: 10px;
     }
   </style>
 </head>
 <body>
-  <div id="login">
-    <h1>Gastos Personales</h1>
-    <input type="password" id="pinInput" placeholder="Ingresa el PIN">
-    <button onclick="checkPIN()">Entrar</button>
+  <div class="topbar">
+    <button onclick="showSection('usuarios')">👤 Usuarios</button>
+    <button onclick="showSection('conceptos')">🗂️ Conceptos</button>
+    <button onclick="showSection('gastos')">💸 Gastos</button>
   </div>
 
-  <div id="app" style="display:none">
-    <h2>Bienvenido</h2>
-    <select id="userSelect"></select>
-    <textarea id="gastoInput" placeholder="Escribe o dicta el gasto..."></textarea>
-    <button onclick="agregarGasto()">Agregar Gasto</button>
+  <div class="main">
+    <!-- Sección de PIN de acceso -->
+    <div class="section active-section" id="login">
+      <h2>Ingresar PIN</h2>
+      <input type="password" id="pinInput" placeholder="Ingresa PIN">
+      <button class="action" onclick="checkPIN()">Entrar</button>
+    </div>
 
-    <h3>Conceptos</h3>
-    <input type="text" id="nuevoConcepto" placeholder="Nuevo concepto">
-    <button onclick="agregarConcepto()">Agregar Concepto</button>
-    <ul id="conceptosList"></ul>
+    <!-- Sección Usuarios -->
+    <div class="section" id="usuarios">
+      <h2>Usuarios</h2>
+      <input type="text" id="newUser" placeholder="Nombre del usuario">
+      <button class="action" onclick="addUser()">Agregar Usuario</button>
+      <div id="usersList"></div>
+      <div><strong>Seleccionado:</strong> <span id="selectedUser"></span></div>
+    </div>
 
-    <h3>Gastos Registrados</h3>
-    <button onclick="exportarCSV()">Exportar CSV</button>
-    <table id="tablaGastos">
-      <thead>
-        <tr><th>Fecha</th><th>Usuario</th><th>Concepto</th><th>Monto</th><th>Texto</th><th>Acciones</th></tr>
-      </thead>
-      <tbody></tbody>
-    </table>
+    <!-- Sección Conceptos -->
+    <div class="section" id="conceptos">
+      <h2>Conceptos</h2>
+      <input type="text" id="newConcept" placeholder="Nuevo concepto">
+      <button class="action" onclick="addConcept()">Agregar Concepto</button>
+      <div id="conceptList"></div>
+    </div>
 
-    <canvas id="grafica" height="200"></canvas>
+    <!-- Sección Gastos -->
+    <div class="section" id="gastos">
+      <h2>Gastos</h2>
+      <textarea id="gastoTexto" placeholder="Escribe el gasto..."></textarea>
+      <button class="action" onclick="agregarGasto()">Agregar Gasto</button>
+      <button class="action" onclick="descargarCSV()">Exportar CSV</button>
+      <table id="tablaGastos">
+        <thead>
+          <tr><th>Fecha</th><th>Concepto</th><th>Monto</th><th>Usuario</th><th>Acciones</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
   </div>
 
-  <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyD8aw4rOTXWpBNI3aPrVbAwKjcTgYJ0ECw",
-      authDomain: "gastospersonales-96004.firebaseapp.com",
-      projectId: "gastospersonales-96004",
-      storageBucket: "gastospersonales-96004.appspot.com",
-      messagingSenderId: "764171638300",
-      appId: "1:764171638300:web:88d8f6484c8426f6a279a0"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyC6UgYa0Qb2TTuvlpxU6nEru4LYKUMu8pQ",
+    authDomain: "gastospersonales-96004.firebaseapp.com",
+    projectId: "gastospersonales-96004",
+    storageBucket: "gastospersonales-96004.appspot.com",
+    messagingSenderId: "243343663938",
+    appId: "1:243343663938:web:3482c365b6ce580e3cb969"
+  };
 
-    const OPENAI_API_KEY = "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";
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
 
-    let usuarios = [];
-    let conceptos = [];
-    let usuarioActual = "";
+  let selectedUser = "";
 
-    function checkPIN() {
-      const pin = document.getElementById("pinInput").value;
-      if (pin === "5351") {
-        document.getElementById("login").style.display = "none";
-        document.getElementById("app").style.display = "block";
-        cargarUsuarios();
-        cargarConceptos();
-        cargarGastos();
-      } else {
-        alert("PIN incorrecto");
-      }
+  function checkPIN() {
+    const pin = document.getElementById("pinInput").value;
+    if (pin === "5351") {
+      document.getElementById("login").style.display = "none";
+      showSection("usuarios");
+    } else {
+      alert("PIN incorrecto");
     }
+  }
 
-    async function cargarUsuarios() {
-      const snapshot = await db.collection("usuarios").get();
-      const select = document.getElementById("userSelect");
-      select.innerHTML = "";
-      snapshot.forEach(doc => {
-        const u = doc.data().nombre;
-        usuarios.push(u);
-        const opt = document.createElement("option");
-        opt.value = u;
-        opt.innerText = u;
-        select.appendChild(opt);
-      });
-      usuarioActual = select.value;
-      select.onchange = () => usuarioActual = select.value;
-    }
+  function showSection(id) {
+    document.querySelectorAll(".section").forEach(s => s.style.display = "none");
+    document.getElementById(id).style.display = "block";
+    if (id === "usuarios") cargarUsuarios();
+    if (id === "conceptos") cargarConceptos();
+    if (id === "gastos") cargarGastos();
+  }
 
-    async function cargarConceptos() {
-      const snapshot = await db.collection("conceptos").get();
-      conceptos = [];
-      document.getElementById("conceptosList").innerHTML = "";
-      snapshot.forEach(doc => {
-        const nombre = doc.data().nombre;
-        conceptos.push(nombre);
-        const li = document.createElement("li");
-        li.innerHTML = `${nombre} <button onclick="eliminarConcepto('${doc.id}')">❌</button>`;
-        document.getElementById("conceptosList").appendChild(li);
-      });
-    }
+  function addUser() {
+    const name = document.getElementById("newUser").value.trim();
+    if (!name) return;
+    db.collection("usuarios").add({ nombre: name });
+    document.getElementById("newUser").value = "";
+    cargarUsuarios();
+  }
 
-    async function agregarConcepto() {
-      const nombre = document.getElementById("nuevoConcepto").value.trim();
-      if (!nombre) return;
-      await db.collection("conceptos").add({ nombre });
-      document.getElementById("nuevoConcepto").value = "";
-      cargarConceptos();
-    }
-
-    async function eliminarConcepto(id) {
-      await db.collection("conceptos").doc(id).delete();
-      cargarConceptos();
-    }
-
-    async function agregarGasto() {
-      const texto = document.getElementById("gastoInput").value.trim();
-      if (!texto || !usuarioActual) return alert("Falta texto o usuario");
-
-      const prompt = `Clasifica este gasto según estos conceptos: ${conceptos.join(", ")}. Devuelve solo el concepto y el monto en JSON:
-{
-  "concepto": "",
-  "monto": 0
-}
-Texto: "${texto}"`;
-
-      const res = await fetch("https://api.openai.com/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${OPENAI_API_KEY}`
-        },
-        body: JSON.stringify({
-          model: "gpt-3.5-turbo",
-          messages: [{ role: "user", content: prompt }]
-        })
-      });
-      const json = await res.json();
-      const datos = JSON.parse(json.choices[0].message.content || "{}");
-
-      if (!datos.concepto || !datos.monto) return alert("No se pudo clasificar el gasto");
-
-      await db.collection("gastos").add({
-        usuario: usuarioActual,
-        texto,
-        concepto: datos.concepto,
-        monto: parseFloat(datos.monto),
-        fecha: new Date().toISOString()
-      });
-
-      document.getElementById("gastoInput").value = "";
-      cargarGastos();
-    }
-
-    async function cargarGastos() {
-      const snapshot = await db.collection("gastos").orderBy("fecha", "desc").get();
-      const tbody = document.querySelector("#tablaGastos tbody");
-      tbody.innerHTML = "";
-      const resumen = {};
+  function cargarUsuarios() {
+    db.collection("usuarios").get().then(snapshot => {
+      const cont = document.getElementById("usersList");
+      cont.innerHTML = "";
       snapshot.forEach(doc => {
         const d = doc.data();
-        if (!resumen[d.concepto]) resumen[d.concepto] = 0;
-        resumen[d.concepto] += d.monto;
+        const div = document.createElement("div");
+        div.innerHTML = `${d.nombre} <button onclick="editarUsuario('${doc.id}', '${d.nombre}')">✏️</button> <button onclick="eliminarUsuario('${doc.id}')">🗑</button> <button onclick="seleccionarUsuario('${doc.id}', '${d.nombre}')">✅</button>`;
+        cont.appendChild(div);
+      });
+    });
+  }
 
+  function editarUsuario(id, oldName) {
+    const nuevo = prompt("Editar nombre:", oldName);
+    if (nuevo) db.collection("usuarios").doc(id).update({ nombre: nuevo }).then(cargarUsuarios);
+  }
+
+  function eliminarUsuario(id) {
+    if (confirm("¿Eliminar usuario?")) db.collection("usuarios").doc(id).delete().then(cargarUsuarios);
+  }
+
+  function seleccionarUsuario(id, nombre) {
+    selectedUser = nombre;
+    document.getElementById("selectedUser").innerText = nombre;
+    alert("Usuario seleccionado: " + nombre);
+  }
+
+  function addConcept() {
+    const name = document.getElementById("newConcept").value.trim();
+    if (!name) return;
+    db.collection("conceptos").add({ nombre: name });
+    document.getElementById("newConcept").value = "";
+    cargarConceptos();
+  }
+
+  function cargarConceptos() {
+    db.collection("conceptos").get().then(snapshot => {
+      const cont = document.getElementById("conceptList");
+      cont.innerHTML = "";
+      snapshot.forEach(doc => {
+        const d = doc.data();
+        const div = document.createElement("div");
+        div.innerHTML = `${d.nombre} <button onclick="editarConcepto('${doc.id}', '${d.nombre}')">✏️</button> <button onclick="eliminarConcepto('${doc.id}')">🗑</button>`;
+        cont.appendChild(div);
+      });
+    });
+  }
+
+  function editarConcepto(id, oldName) {
+    const nuevo = prompt("Editar concepto:", oldName);
+    if (nuevo) db.collection("conceptos").doc(id).update({ nombre: nuevo }).then(cargarConceptos);
+  }
+
+  function eliminarConcepto(id) {
+    if (confirm("¿Eliminar concepto?")) db.collection("conceptos").doc(id).delete().then(cargarConceptos);
+  }
+
+  async function agregarGasto() {
+    if (!selectedUser) return alert("Selecciona un usuario");
+    const texto = document.getElementById("gastoTexto").value.trim();
+    if (!texto) return;
+
+    const conceptos = await db.collection("conceptos").get();
+    const lista = conceptos.docs.map(doc => doc.data().nombre);
+
+    const prompt = `Clasifica este texto: "${texto}" usando solo uno de estos conceptos: ${lista.join(", ")}. Devuelve solo el nombre del concepto más apropiado.`;
+
+    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer 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"
+      },
+      body: JSON.stringify({
+        model: "gpt-3.5-turbo",
+        messages: [{ role: "user", content: prompt }]
+      })
+    });
+
+    const completion = await res.json();
+    const concepto = completion.choices[0].message.content.trim();
+
+    db.collection("gastos").add({
+      texto,
+      concepto,
+      usuario: selectedUser,
+      fecha: new Date().toISOString().split("T")[0]
+    });
+
+    document.getElementById("gastoTexto").value = "";
+    cargarGastos();
+  }
+
+  function cargarGastos() {
+    db.collection("gastos").orderBy("fecha", "desc").get().then(snapshot => {
+      const tbody = document.querySelector("#tablaGastos tbody");
+      tbody.innerHTML = "";
+      snapshot.forEach(doc => {
+        const d = doc.data();
         const tr = document.createElement("tr");
         tr.innerHTML = `
-          <td>${d.fecha.split("T")[0]}</td>
-          <td>${d.usuario}</td>
+          <td>${d.fecha}</td>
           <td>${d.concepto}</td>
-          <td>${d.monto}</td>
           <td>${d.texto}</td>
-          <td class="actions">
-            <button onclick="eliminarGasto('${doc.id}')">🗑</button>
-          </td>`;
+          <td>${d.usuario}</td>
+          <td><button onclick="eliminarGasto('${doc.id}')">🗑</button></td>
+        `;
         tbody.appendChild(tr);
       });
+    });
+  }
 
-      mostrarGrafica(resumen);
-    }
+  function eliminarGasto(id) {
+    if (confirm("¿Eliminar gasto?")) db.collection("gastos").doc(id).delete().then(cargarGastos);
+  }
 
-    async function eliminarGasto(id) {
-      if (confirm("¿Eliminar gasto?")) {
-        await db.collection("gastos").doc(id).delete();
-        cargarGastos();
-      }
-    }
-
-    function exportarCSV() {
-      const filas = [["Fecha", "Usuario", "Concepto", "Monto", "Texto"]];
-      document.querySelectorAll("#tablaGastos tbody tr").forEach(tr => {
-        const cols = [...tr.querySelectorAll("td")].map(td => td.innerText);
-        filas.push(cols.slice(0, 5));
+  function descargarCSV() {
+    db.collection("gastos").get().then(snapshot => {
+      let csv = "Fecha,Concepto,Monto,Usuario\n";
+      snapshot.forEach(doc => {
+        const d = doc.data();
+        csv += `${d.fecha},${d.concepto},${d.texto},${d.usuario}\n`;
       });
-      let csv = filas.map(r => r.join(",")).join("\n");
       const blob = new Blob([csv], { type: "text/csv" });
-      const link = document.createElement("a");
-      link.href = URL.createObjectURL(blob);
-      link.download = "gastos.csv";
-      link.click();
-    }
-
-    function mostrarGrafica(resumen) {
-      const ctx = document.getElementById("grafica").getContext("2d");
-      if (window.graficaRef) window.graficaRef.destroy();
-      window.graficaRef = new Chart(ctx, {
-        type: "bar",
-        data: {
-          labels: Object.keys(resumen),
-          datasets: [{
-            label: "Gastos por concepto",
-            data: Object.values(resumen),
-            backgroundColor: "#007bff"
-          }]
-        },
-        options: { responsive: true, scales: { y: { beginAtZero: true } } }
-      });
-    }
-  </script>
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "gastos.csv";
+      a.click();
+    });
+  }
+</script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
 </body>
 </html>
-
