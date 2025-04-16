@@ -157,6 +157,7 @@ const firebaseConfig = {
   appId: "1:243343663938:web:3482c365b6ce580e3cb969"
 };
 
+// Reemplaza con tu clave válida (la tuya está aquí en duro)
 const OPENAI_API_KEY = "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";
 
 // Inicializar Firebase
@@ -331,7 +332,8 @@ async function procesarConOpenAI() {
     const respuesta = await axios.post(
       'https://api.openai.com/v1/chat/completions',
       {
-        model: "gpt-4.1-nano",
+        // Cambiamos a GPT-4
+        model: "gpt-4",
         messages: [{
           role: "user",
           content: `Extrae en formato JSON: { fecha: "dd/mm/aaaa", concepto: "", monto: 0, proyecto: "" } del texto: "${texto}"`
@@ -346,6 +348,7 @@ async function procesarConOpenAI() {
       }
     );
 
+    // Parsear la respuesta de la IA
     const datos = JSON.parse(respuesta.data.choices[0].message.content);
     
     // Validar datos
