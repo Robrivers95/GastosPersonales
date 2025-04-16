@@ -157,7 +157,8 @@ const firebaseConfig = {
   appId: "1:243343663938:web:3482c365b6ce580e3cb969"
 };
 
-const OPENAI_API_KEY = "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";
+// Reemplaza con tu nueva API Key
+const OPENAI_API_KEY = "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";
 
 // Inicializar Firebase
 const app = firebase.initializeApp(firebaseConfig);
@@ -340,7 +341,7 @@ async function procesarConOpenAI() {
       },
       {
         headers: {
-          'Authorization': `Bearer ${OPENAI_API_KEY}`,
+          'Authorization': \`Bearer \${OPENAI_API_KEY}\`,
           'Content-Type': 'application/json'
         }
       }
