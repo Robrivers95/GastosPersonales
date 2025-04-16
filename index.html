@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Gestor Inteligente Completo</title>
 
-  <!-- Axios para HTTP -->
+  <!-- Axios para peticiones HTTP -->
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-  <!-- Firebase -->
+  <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
 
@@ -142,179 +142,173 @@
     </div>
   </div>
 
-<script>
-  // ========== CONFIGURACIÓN ==========
-  const firebaseConfig = {
-    apiKey: "AIzaSyC6UgYa0Qb2TTuvlpxU6nEru4LYKUMu8pQ",
-    authDomain: "gastospersonales-96004.firebaseapp.com",
-    projectId: "gastospersonales-96004",
-    storageBucket: "gastospersonales-96004.appspot.com",
-    messagingSenderId: "243343663938",
-    appId: "1:243343663938:web:3482c365b6ce580e3cb969"
-  };
-  // Tu OpenAI API Key (⭐ así corre directo en Pages)
-  const OPENAI_API_KEY = "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";
-
-  // Inicializa Firebase
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.firestore();
-  let usuarioActivo = null;
-  let imagenBase64 = null;
-
-  // ========== UI y Firestore ==========
-  function verificarPIN() {
-    const pin = document.getElementById("inputPIN").value;
-    if (pin === "5351") {
-      document.getElementById("login").classList.add("hidden");
-      document.getElementById("app").classList.remove("hidden");
-      mostrarSeccion("usuarios");
-    } else {
-      mostrarError("❌ PIN incorrecto");
-    }
-  }
-
-  function mostrarSeccion(sec) {
-    document.querySelectorAll('[id^="seccion"]').forEach(el=>el.classList.add("hidden"));
-    document.getElementById("seccion"+sec.charAt(0).toUpperCase()+sec.slice(1)).classList.remove("hidden");
-    if(sec==="usuarios") cargarUsuarios();
-    if(sec==="conceptos") cargarConceptos();
-    if(sec==="gastos") cargarGastos();
-  }
-
-  // —— Usuarios ——
-  async function agregarUsuario(){
-    const nombre = document.getElementById("nuevoUsuario").value.trim();
-    if(!nombre) return mostrarError("⚠️ Ingresa un nombre");
-    await db.collection("usuarios").add({nombre});
-    document.getElementById("nuevoUsuario").value="";
-    cargarUsuarios();
-  }
-  async function cargarUsuarios(){
-    const snap = await db.collection("usuarios").get();
-    document.getElementById("listaUsuarios").innerHTML = snap.docs.map(d=>{
-      const n=d.data().nombre;
-      return `<div class="item"><span>${n}</span>
-        <button onclick="seleccionarUsuario('${n}')">✔️</button>
-      </div>`;
-    }).join("");
-  }
-  function seleccionarUsuario(n){
-    usuarioActivo=n;
-    mostrarExito(`Usuario activo: ${n}`);
-  }
-
-  // —— Conceptos ——
-  async function agregarConcepto(){
-    const c = document.getElementById("nuevoConcepto").value.trim();
-    if(!c) return mostrarError("⚠️ Ingresa un concepto");
-    await db.collection("conceptos").add({nombre:c});
-    document.getElementById("nuevoConcepto").value="";
-    cargarConceptos();
-  }
-  async function cargarConceptos(){
-    const snap = await db.collection("conceptos").get();
-    document.getElementById("listaConceptos").innerHTML =
-      snap.docs.map(d=>`<div class="item">${d.data().nombre}</div>`).join("");
-  }
-
-  // —— Preview Imagen ——
-  function previewImage(e){
-    const file = e.target.files[0];
-    if(!file) return;
-    const reader = new FileReader();
-    reader.onload = evt=>{
-      imagenBase64 = evt.target.result;
-      document.getElementById("preview").src = imagenBase64;
+  <script>
+    // ========== CONFIGURACIÓN ==========
+    const firebaseConfig = {
+      apiKey: "AIzaSyC6UgYa0Qb2TTuvlpxU6nEru4LYKUMu8pQ",
+      authDomain: "gastospersonales-96004.firebaseapp.com",
+      projectId: "gastospersonales-96004",
+      storageBucket: "gastospersonales-96004.appspot.com",
+      messagingSenderId: "243343663938",
+      appId: "1:243343663938:web:3482c365b6ce580e3cb969"
     };
-    reader.readAsDataURL(file);
-  }
+    const OPENAI_API_KEY = "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";
+    const OPENAI_URL = "https://corsproxy.io/?https://api.openai.com/v1/chat/completions";
 
-  // —— Gastos IA ——
-  async function procesarConOpenAI(){
-    const txt = document.getElementById("descripcionGasto").value.trim();
-    if(!usuarioActivo) return mostrarError("⚠️ Selecciona un usuario");
-    if(!txt) return mostrarError("⚠️ Describe el gasto");
+    // Inicializa Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    let usuarioActivo = null, imagenBase64 = null;
 
-    try {
-      const resp = await axios.post(
-        "https://api.openai.com/v1/chat/completions",
-        {
-          model: "gpt-4.1-nano",
-          messages: [{
-            role:"user",
-            content: `Extrae en JSON { fecha:"dd/mm/aaaa", concepto:"", monto:0, proyecto:"" } del texto: "${txt}"`
-          }],
-          temperature: 0
-        },
-        { headers:{
-            "Content-Type":"application/json",
-            "Authorization":`Bearer ${OPENAI_API_KEY}`
+    // —— Login y navegación ——
+    function verificarPIN() {
+      const pin = document.getElementById("inputPIN").value;
+      if (pin === "5351") {
+        document.getElementById("login").classList.add("hidden");
+        document.getElementById("app").classList.remove("hidden");
+        mostrarSeccion("usuarios");
+      } else {
+        mostrarError("❌ PIN incorrecto");
+      }
+    }
+    function mostrarSeccion(sec) {
+      document.querySelectorAll('[id^="seccion"]').forEach(el=>el.classList.add("hidden"));
+      document.getElementById("seccion"+sec.charAt(0).toUpperCase()+sec.slice(1)).classList.remove("hidden");
+      if(sec==="usuarios") cargarUsuarios();
+      if(sec==="conceptos") cargarConceptos();
+      if(sec==="gastos") cargarGastos();
+    }
+
+    // —— Usuarios ——
+    async function agregarUsuario(){
+      const nombre = document.getElementById("nuevoUsuario").value.trim();
+      if(!nombre) return mostrarError("⚠️ Ingresa un nombre");
+      await db.collection("usuarios").add({nombre});
+      document.getElementById("nuevoUsuario").value="";
+      cargarUsuarios();
+    }
+    async function cargarUsuarios(){
+      const snap = await db.collection("usuarios").get();
+      document.getElementById("listaUsuarios").innerHTML =
+        snap.docs.map(d=>{
+          const n=d.data().nombre;
+          return `<div class="item"><span>${n}</span>
+            <button onclick="seleccionarUsuario('${n}')">✔️</button>
+          </div>`;
+        }).join("");
+    }
+    function seleccionarUsuario(n){
+      usuarioActivo=n;
+      mostrarExito(`Usuario activo: ${n}`);
+    }
+
+    // —— Conceptos ——
+    async function agregarConcepto(){
+      const c = document.getElementById("nuevoConcepto").value.trim();
+      if(!c) return mostrarError("⚠️ Ingresa un concepto");
+      await db.collection("conceptos").add({nombre:c});
+      document.getElementById("nuevoConcepto").value="";
+      cargarConceptos();
+    }
+    async function cargarConceptos(){
+      const snap = await db.collection("conceptos").get();
+      document.getElementById("listaConceptos").innerHTML =
+        snap.docs.map(d=>`<div class="item">${d.data().nombre}</div>`).join("");
+    }
+
+    // —— Preview Imagen ——
+    function previewImage(e){
+      const file = e.target.files[0];
+      if(!file) return;
+      const reader = new FileReader();
+      reader.onload = evt=>{
+        imagenBase64 = evt.target.result;
+        document.getElementById("preview").src = imagenBase64;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    // —— Gastos IA ——
+    async function procesarConOpenAI(){
+      const txt = document.getElementById("descripcionGasto").value.trim();
+      if(!usuarioActivo) return mostrarError("⚠️ Selecciona un usuario");
+      if(!txt)         return mostrarError("⚠️ Describe el gasto");
+
+      try {
+        const resp = await axios.post(
+          OPENAI_URL,
+          {
+            model: "gpt-3.5-turbo",
+            messages: [{
+              role:"user",
+              content:`Extrae en JSON { fecha:"dd/mm/aaaa", concepto:"", monto:0, proyecto:"" } del texto: "${txt}"`
+            }],
+            temperature: 0
+          },
+          {
+            headers: {
+              "Content-Type":"application/json",
+              "Authorization":`Bearer ${OPENAI_API_KEY}`
+            }
           }
-        }
-      );
+        );
 
-      const json = resp.data.choices[0].message.content.trim();
-      const datos = JSON.parse(json);
+        const datos = JSON.parse(resp.data.choices[0].message.content.trim());
 
-      // guarda en Firestore
-      await db.collection("gastos").add({
-        fecha: datos.fecha,
-        concepto: datos.concepto,
-        monto: datos.monto,
-        proyecto: datos.proyecto,
-        usuario: usuarioActivo,
-        imagen: imagenBase64||"",
-        timestamp: firebase.firestore.FieldValue.serverTimestamp()
-      });
+        await db.collection("gastos").add({
+          fecha:    datos.fecha,
+          concepto: datos.concepto,
+          monto:    datos.monto,
+          proyecto: datos.proyecto,
+          usuario:  usuarioActivo,
+          imagen:   imagenBase64||"",
+          timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        });
 
-      document.getElementById("descripcionGasto").value="";
-      document.getElementById("preview").src="";
-      imagenBase64 = null;
-      mostrarExito("✅ Gasto procesado correctamente");
-      cargarGastos();
+        document.getElementById("descripcionGasto").value="";
+        document.getElementById("preview").src="";
+        imagenBase64 = null;
+        mostrarExito("✅ Gasto procesado correctamente");
+        cargarGastos();
 
-    } catch(err){
-      console.error(err);
-      mostrarError(`❌ ${err.response?.data?.error?.message||err.message}`);
+      } catch(err){
+        console.error(err);
+        mostrarError(`❌ ${err.response?.data?.error?.message||err.message}`);
+      }
     }
-  }
 
-  async function cargarGastos(){
-    const snap = await db.collection("gastos").orderBy("timestamp","desc").get();
-    document.getElementById("tablaGastos").innerHTML =
-      snap.docs.map(d=>{
-        const r=d.data();
-        return `<tr>
-          <td>${r.fecha}</td>
-          <td>${r.concepto}</td>
-          <td>$${r.monto}</td>
-          <td>${r.proyecto}</td>
-          <td>
-            ${r.imagen?`<img src="${r.imagen}" class="preview-img">`:``}
-            <button onclick="eliminarGasto('${d.id}')">🗑</button>
-          </td>
-        </tr>`;
-      }).join("");
-  }
-
-  async function eliminarGasto(id){
-    if(confirm("¿Eliminar este gasto?")){
-      await db.collection("gastos").doc(id).delete();
-      cargarGastos();
+    async function cargarGastos(){
+      const snap = await db.collection("gastos").orderBy("timestamp","desc").get();
+      document.getElementById("tablaGastos").innerHTML =
+        snap.docs.map(d=>{
+          const r=d.data();
+          return `<tr>
+            <td>${r.fecha}</td><td>${r.concepto}</td><td>$${r.monto}</td><td>${r.proyecto}</td>
+            <td>${r.imagen?`<img src="${r.imagen}" class="preview-img">`:``}
+              <button onclick="eliminarGasto('${d.id}')">🗑</button>
+            </td>
+          </tr>`;
+        }).join("");
     }
-  }
 
-  // —— Alertas ——
-  function mostrarError(msg){
-    const e=document.getElementById("mensajeError");
-    e.textContent=msg; e.style.display="block";
-    setTimeout(()=>e.style.display="none",5000);
-  }
-  function mostrarExito(msg){
-    const e=document.getElementById("mensajeExito");
-    e.textContent=msg; e.style.display="block";
-    setTimeout(()=>e.style.display="none",3000);
-  }
-</script>
+    async function eliminarGasto(id){
+      if(confirm("¿Eliminar este gasto?")){
+        await db.collection("gastos").doc(id).delete();
+        cargarGastos();
+      }
+    }
+
+    // —— Alertas ——
+    function mostrarError(msg){
+      const e=document.getElementById("mensajeError");
+      e.textContent=msg; e.style.display="block";
+      setTimeout(()=>e.style.display="none",5000);
+    }
+    function mostrarExito(msg){
+      const e=document.getElementById("mensajeExito");
+      e.textContent=msg; e.style.display="block";
+      setTimeout(()=>e.style.display="none",3000);
+    }
+  </script>
 </body>
 </html>
