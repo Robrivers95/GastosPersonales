@@ -1,450 +1,61 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Gestor Inteligente Completo</title>
-  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
-  <style>
-    :root {
-      --color-primario: #2c3e50;
-      --color-secundario: #1abc9c;
-      --fondo: #f8f9fa;
-    }
-    body {
-      font-family: 'Arial', sans-serif;
-      max-width: 1000px;
-      margin: 20px auto;
-      padding: 20px;
-      background: var(--fondo);
-    }
-    .hidden { display: none; }
-    .topbar {
-      background: var(--color-primario);
-      padding: 15px;
-      border-radius: 8px;
-      margin-bottom: 20px;
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-    button {
-      background: var(--color-secundario);
-      color: white;
-      border: none;
-      padding: 10px 20px;
-      border-radius: 5px;
-      cursor: pointer;
-      transition: 0.3s;
-    }
-    button:hover { opacity: 0.9; }
-    input, textarea {
-      width: 100%;
-      padding: 12px;
-      margin: 10px 0;
-      border: 1px solid #ddd;
-      border-radius: 5px;
-      box-sizing: border-box;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      background: white;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-      margin-top: 20px;
-    }
-    th, td {
-      padding: 12px;
-      border: 1px solid #eee;
-      text-align: left;
-    }
-    th { background: var(--fondo); }
-    .alerta {
-      padding: 15px;
-      margin: 15px 0;
-      border-radius: 5px;
-      display: none;
-    }
-    .error { background: #ffebee; color: #d32f2f; }
-    .exito { background: #e8f5e9; color: #2e7d32; }
-    .preview-img {
-      max-width: 150px;
-      margin: 10px 0;
-      border-radius: 5px;
-    }
-    .item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 10px;
-      margin: 5px 0;
-      background: white;
-      border-radius: 5px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    }
-  </style>
+  <!-- … tu <head> tal cual (fonts, estilos, axios, firebase-app-compat, firestore-compat) … -->
 </head>
 <body>
-  <!-- Acceso -->
-  <div id="login">
-    <h2>🔐 Acceso al Sistema</h2>
-    <input type="password" id="inputPIN" placeholder="PIN (5351)">
-    <button onclick="verificarPIN()">Ingresar</button>
-    <div id="mensajeError" class="alerta error"></div>
-  </div>
-
-  <!-- Aplicación -->
-  <div id="app" class="hidden">
-    <div class="topbar">
-      <button onclick="mostrarSeccion('usuarios')">👥 Usuarios</button>
-      <button onclick="mostrarSeccion('conceptos')">🗃️ Conceptos</button>
-      <button onclick="mostrarSeccion('gastos')">💵 Gastos IA</button>
-    </div>
-
-    <!-- Sección Usuarios -->
-    <div id="seccionUsuarios">
-      <h3>🧑💼 Administración de Usuarios</h3>
-      <input type="text" id="nuevoUsuario" placeholder="Nombre completo">
-      <button onclick="agregarUsuario()">➕ Crear Usuario</button>
-      <div id="listaUsuarios" style="margin-top: 20px;"></div>
-    </div>
-
-    <!-- Sección Conceptos -->
-    <div id="seccionConceptos" class="hidden">
-      <h3>📂 Gestión de Conceptos</h3>
-      <input type="text" id="nuevoConcepto" placeholder="Nuevo concepto">
-      <button onclick="agregarConcepto()">➕ Agregar Concepto</button>
-      <div id="listaConceptos" style="margin-top: 20px;"></div>
-    </div>
-
-    <!-- Sección Gastos con OpenAI -->
-    <div id="seccionGastos" class="hidden">
-      <h3>🤖 Registro Inteligente de Gastos</h3>
-      <textarea id="descripcionGasto" 
-                placeholder="Ej: '15/03 - Compra de materiales $500 en Lerry Merlin para proyecto CasaX - Foto: drive.com/foto1'"
-                rows="4"></textarea>
-      <input type="file" id="fotoGasto" onchange="previewImage(event)">
-      <img id="preview" class="preview-img">
-      <button onclick="procesarConOpenAI()">🧠 Procesar con IA</button>
-      <div id="mensajeExito" class="alerta exito"></div>
-      
-      <h4>📅 Historial de Gastos</h4>
-      <table>
-        <thead>
-          <tr>
-            <th>Fecha</th>
-            <th>Concepto</th>
-            <th>Monto</th>
-            <th>Proyecto</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody id="tablaGastos"></tbody>
-      </table>
-    </div>
-  </div>
+  <!-- … todo tu body con login, secciones, tabla … -->
 
 <script>
-// ================= CONFIGURACIÓN INICIAL ================= //
-const firebaseConfig = {
-  apiKey: "AIzaSyC6UgYa0Qb2TTuvlpxU6nEru4LYKUMu8pQ",
-  authDomain: "gastospersonales-96004.firebaseapp.com",
-  projectId: "gastospersonales-96004",
-  storageBucket: "gastospersonales-96004.appspot.com",
-  messagingSenderId: "243343663938",
-  appId: "1:243343663938:web:3482c365b6ce580e3cb969"
-};
+  // ya tienes db, usuarioActivo, etc.
 
-// Pega aquí tu API key de OpenAI
-const OPENAI_API_KEY = "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";
+  async function procesarConOpenAI() {
+    const texto = document.getElementById("descripcionGasto").value.trim();
+    if (!usuarioActivo) return mostrarError("⚠️ Primero selecciona un usuario");
+    if (!texto)      return mostrarError("⚠️ Describe el gasto");
 
-// Inicializar Firebase
-const app = firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore(app);
-let usuarioActivo = null;
-let imagenBase64 = null;
-
-// ================= FUNCIONES PRINCIPALES ================= //
-function verificarPIN() {
-  const pin = document.getElementById("inputPIN").value;
-  const mensajeError = document.getElementById("mensajeError");
-  
-  if (pin === "5351") {
-    document.getElementById("login").classList.add("hidden");
-    document.getElementById("app").classList.remove("hidden");
-    mostrarSeccion('usuarios');
-  } else {
-    mensajeError.textContent = "❌ PIN incorrecto. Intenta nuevamente.";
-    mensajeError.style.display = 'block';
-  }
-}
-
-function mostrarSeccion(seccion) {
-  document.querySelectorAll('[id^="seccion"]').forEach(el => el.classList.add('hidden'));
-  // Corregimos la forma de construir el ID
-  document.getElementById(`seccion${seccion.charAt(0).toUpperCase() + seccion.slice(1)}`).classList.remove('hidden');
-  
-  if (seccion === 'usuarios') cargarUsuarios();
-  if (seccion === 'conceptos') cargarConceptos();
-  if (seccion === 'gastos') cargarGastos();
-}
-
-// ================= USUARIOS ================= //
-async function agregarUsuario() {
-  const nombre = document.getElementById("nuevoUsuario").value.trim();
-  if (!nombre) return mostrarError("⚠️ Ingresa un nombre válido");
-  
-  try {
-    await db.collection("usuarios").add({ nombre });
-    document.getElementById("nuevoUsuario").value = "";
-    mostrarExito("✅ Usuario creado exitosamente");
-    cargarUsuarios();
-  } catch (error) {
-    mostrarError(`❌ Error: ${error.message}`);
-  }
-}
-
-async function cargarUsuarios() {
-  try {
-    const snapshot = await db.collection("usuarios").get();
-    const lista = document.getElementById("listaUsuarios");
-    lista.innerHTML = snapshot.docs.map(doc => `
-      <div class="item">
-        <span>${doc.data().nombre}</span>
-        <div>
-          <button onclick="editarUsuario('${doc.id}', '${doc.data().nombre}')">✏️</button>
-          <button onclick="eliminarUsuario('${doc.id}')">🗑</button>
-          <button onclick="seleccionarUsuario('${doc.data().nombre}')">✔️ Seleccionar</button>
-        </div>
-      </div>
-    `).join('');
-  } catch (error) {
-    mostrarError(`❌ Error al cargar usuarios: ${error.message}`);
-  }
-}
-
-async function editarUsuario(id, nombreActual) {
-  const nuevoNombre = prompt("Nuevo nombre:", nombreActual);
-  if (nuevoNombre) {
     try {
-      await db.collection("usuarios").doc(id).update({ nombre: nuevoNombre });
-      cargarUsuarios();
-      mostrarExito("✅ Usuario actualizado");
-    } catch (error) {
-      mostrarError(`❌ Error: ${error.message}`);
-    }
-  }
-}
-
-async function eliminarUsuario(id) {
-  if (confirm("¿Eliminar este usuario permanentemente?")) {
-    try {
-      await db.collection("usuarios").doc(id).delete();
-      cargarUsuarios();
-      mostrarExito("✅ Usuario eliminado");
-    } catch (error) {
-      mostrarError(`❌ Error: ${error.message}`);
-    }
-  }
-}
-
-function seleccionarUsuario(nombre) {
-  usuarioActivo = nombre;
-  mostrarExito(`✅ Usuario activo: ${nombre}`);
-}
-
-// ================= CONCEPTOS ================= //
-async function agregarConcepto() {
-  const nombre = document.getElementById("nuevoConcepto").value.trim();
-  if (!nombre) return mostrarError("⚠️ Ingresa un concepto válido");
-  
-  try {
-    await db.collection("conceptos").add({ nombre });
-    document.getElementById("nuevoConcepto").value = "";
-    mostrarExito("✅ Concepto creado exitosamente");
-    cargarConceptos();
-  } catch (error) {
-    mostrarError(`❌ Error: ${error.message}`);
-  }
-}
-
-async function cargarConceptos() {
-  try {
-    const snapshot = await db.collection("conceptos").get();
-    const lista = document.getElementById("listaConceptos");
-    lista.innerHTML = snapshot.docs.map(doc => `
-      <div class="item">
-        <span>${doc.data().nombre}</span>
-        <div>
-          <button onclick="editarConcepto('${doc.id}', '${doc.data().nombre}')">✏️</button>
-          <button onclick="eliminarConcepto('${doc.id}')">🗑</button>
-        </div>
-      </div>
-    `).join('');
-  } catch (error) {
-    mostrarError(`❌ Error al cargar conceptos: ${error.message}`);
-  }
-}
-
-async function editarConcepto(id, nombreActual) {
-  const nuevoNombre = prompt("Editar concepto:", nombreActual);
-  if (nuevoNombre) {
-    try {
-      await db.collection("conceptos").doc(id).update({ nombre: nuevoNombre });
-      cargarConceptos();
-      mostrarExito("✅ Concepto actualizado");
-    } catch (error) {
-      mostrarError(`❌ Error: ${error.message}`);
-    }
-  }
-}
-
-async function eliminarConcepto(id) {
-  if (confirm("¿Eliminar este concepto permanentemente?")) {
-    try {
-      await db.collection("conceptos").doc(id).delete();
-      cargarConceptos();
-      mostrarExito("✅ Concepto eliminado");
-    } catch (error) {
-      mostrarError(`❌ Error: ${error.message}`);
-    }
-  }
-}
-
-// ================= GASTOS CON OPENAI (Endpoint /v1/responses) ================= //
-function previewImage(event) {
-  const file = event.target.files[0];
-  const reader = new FileReader();
-  reader.onload = e => {
-    imagenBase64 = e.target.result;
-    document.getElementById("preview").src = imagenBase64;
-  };
-  reader.readAsDataURL(file);
-}
-
-async function procesarConOpenAI() {
-  const texto = document.getElementById("descripcionGasto").value.trim();
-  if (!usuarioActivo) return mostrarError("⚠️ Primero selecciona un usuario");
-  if (!texto) return mostrarError("⚠️ Describe el gasto");
-  
-  try {
-    // Petición que imita tu snippet "curl" con /v1/responses
-    const respuesta = await axios.post(
-      'https://api.openai.com/v1/responses',
-      {
-        "model": "gpt-4.1", // cuidado: puede no existir
-        "input": [
-          {
-            "type": "input_text",
-            "text": `Extrae en formato JSON: { fecha: "dd/mm/aaaa", concepto: "", monto: 0, proyecto: "" } del texto: "${texto}"`
-          }
-        ],
-        "text": { "format": { "type": "text" } },
-        "reasoning": {},
-        "tools": [],
-        "temperature": 1,
-        "max_output_tokens": 2048,
-        "top_p": 1,
-        "store": true
-      },
-      {
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${OPENAI_API_KEY}`
-        }
+      // Llama a tu Flask
+      const resp = await axios.post('http://TU_SERVIDOR:5000/api/addExpense', {
+        texto,
+        usuario: usuarioActivo
+      });
+      if (resp.data.success) {
+        document.getElementById("descripcionGasto").value = "";
+        imagenBase64 = null;
+        document.getElementById("preview").src = "";
+        mostrarExito("✅ Gasto procesado correctamente");
+        cargarGastos();
+      } else {
+        mostrarError("❌ " + JSON.stringify(resp.data));
       }
-    );
-
-    // Respuesta en data.output[0].content[0].text
-    const outputItems = respuesta.data.output;
-    if (!outputItems || !outputItems.length) {
-      throw new Error("La IA no devolvió contenido (output vacío).");
+    } catch (err) {
+      console.error(err);
+      mostrarError(`❌ ${err.response?.data?.error || err.message}`);
     }
-
-    const contentParts = outputItems[0].content?.[0];
-    if (!contentParts || contentParts.type !== "output_text") {
-      throw new Error("No encontré output_text en la respuesta de la IA.");
-    }
-
-    const rawText = contentParts.text.trim();
-    const datos = JSON.parse(rawText);
-
-    if (!datos.fecha || !datos.concepto || !datos.monto) {
-      throw new Error("La IA no pudo extraer todos los datos requeridos");
-    }
-
-    // Guardar en Firebase
-    await db.collection("gastos").add({
-      ...datos,
-      imagen: imagenBase64,
-      usuario: usuarioActivo,
-      timestamp: firebase.firestore.FieldValue.serverTimestamp()
-    });
-
-    // Limpiar
-    document.getElementById("descripcionGasto").value = "";
-    imagenBase64 = null;
-    document.getElementById("preview").src = "";
-    
-    mostrarExito("✅ Gasto procesado correctamente");
-    cargarGastos();
-    
-  } catch (error) {
-    mostrarError(`❌ Error: ${error.response?.data?.error?.message || error.message}`);
   }
-}
 
-async function cargarGastos() {
-  try {
-    const snapshot = await db.collection("gastos").orderBy("timestamp", "desc").get();
-    document.getElementById("tablaGastos").innerHTML = snapshot.docs.map(doc => {
-      const data = doc.data();
-      return `
-        <tr>
-          <td>${data.fecha}</td>
-          <td>${data.concepto}</td>
-          <td>$${data.monto}</td>
-          <td>${data.proyecto}</td>
-          <td>
-            ${data.imagen ? `<img src="${data.imagen}" class="preview-img">` : ''}
-            <button onclick="eliminarGasto('${doc.id}')">🗑</button>
-          </td>
-        </tr>
-      `;
-    }).join('');
-  } catch (error) {
-    mostrarError(`❌ Error al cargar gastos: ${error.message}`);
-  }
-}
-
-async function eliminarGasto(id) {
-  if (confirm("¿Eliminar este gasto permanentemente?")) {
+  // Ajusta cargarGastos() para llamar GET /api/listExpenses
+  async function cargarGastos() {
     try {
-      await db.collection("gastos").doc(id).delete();
-      cargarGastos();
-      mostrarExito("✅ Gasto eliminado");
-    } catch (error) {
-      mostrarError(`❌ Error: ${error.message}`);
+      const resp = await axios.get('http://TU_SERVIDOR:5000/api/listExpenses');
+      const docs = resp.data;
+      document.getElementById("tablaGastos").innerHTML =
+        docs.map(d => `
+          <tr>
+            <td>${d.fecha}</td>
+            <td>${d.concepto}</td>
+            <td>$${d.monto}</td>
+            <td>${d.proyecto}</td>
+            <td>
+              <button onclick="eliminarGasto('${d.id}')">🗑</button>
+            </td>
+          </tr>
+        `).join('');
+    } catch (e) {
+      mostrarError(`❌ ${e.message}`);
     }
   }
-}
-
-// ================= FUNCIONES AUXILIARES ================= //
-function mostrarError(mensaje) {
-  const elemento = document.getElementById("mensajeError");
-  elemento.textContent = mensaje;
-  elemento.style.display = 'block';
-  setTimeout(() => elemento.style.display = 'none', 5000);
-}
-
-function mostrarExito(mensaje) {
-  const elemento = document.getElementById("mensajeExito");
-  elemento.textContent = mensaje;
-  elemento.style.display = 'block';
-  setTimeout(() => elemento.style.display = 'none', 3000);
-}
 </script>
 </body>
 </html>
