@@ -332,7 +332,7 @@ async function procesarConOpenAI() {
     const respuesta = await axios.post(
       'https://api.openai.com/v1/chat/completions',
       {
-        model: "gpt-3.5-turbo", // Usa GPT-3.5 si no tienes acceso a GPT-4
+        model: "gpt-4o-mini", // Usa GPT- si no tienes acceso a GPT-4
         messages: [{
           role: "user",
           content: `Extrae en formato JSON: { fecha: "dd/mm/aaaa", concepto: "", monto: 0, proyecto: "" } del texto: "${texto}"`
