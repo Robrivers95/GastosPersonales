@@ -334,7 +334,7 @@ async function procesarConOpenAI() {
     const respuesta = await axios.post(
       'https://api.openai.com/v1/responses',
       {
-        "model": "gpt-4.1-nano", // cuidado: puede no existir
+        "model": "gpt-4.1", // cuidado: puede no existir
         "input": [
           {
             "type": "input_text",
