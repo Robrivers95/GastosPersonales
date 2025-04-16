@@ -5,9 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Gestor Inteligente Completo</title>
 
-  <!-- Axios para peticiones HTTP -->
+  <!-- Axios & Firebase -->
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
-  <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
 
@@ -134,16 +133,14 @@
 
       <h4>📅 Historial de Gastos</h4>
       <table>
-        <thead>
-          <tr><th>Fecha</th><th>Concepto</th><th>Monto</th><th>Proyecto</th><th>Acciones</th></tr>
-        </thead>
+        <thead><tr><th>Fecha</th><th>Concepto</th><th>Monto</th><th>Proyecto</th><th>Acciones</th></tr></thead>
         <tbody id="tablaGastos"></tbody>
       </table>
     </div>
   </div>
 
   <script>
-    // ========== CONFIGURACIÓN ==========
+    // -------- CONFIG --------
     const firebaseConfig = {
       apiKey: "AIzaSyC6UgYa0Qb2TTuvlpxU6nEru4LYKUMu8pQ",
       authDomain: "gastospersonales-96004.firebaseapp.com",
@@ -152,24 +149,22 @@
       messagingSenderId: "243343663938",
       appId: "1:243343663938:web:3482c365b6ce580e3cb969"
     };
-    const OPENAI_API_KEY = "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";
-    const OPENAI_URL = "https://corsproxy.io/?https://api.openai.com/v1/chat/completions";
 
-    // Inicializa Firebase
+    // Pon aquí la URL de tu Worker (la que desplegaste):
+    const OPENAI_PROXY = "https://gastospersonales-proxy.YOUR_SUBDOMAIN.workers.dev";
+
+    // Init Firebase
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
     let usuarioActivo = null, imagenBase64 = null;
 
-    // —— Login y navegación ——
+    // — Login & navegación —
     function verificarPIN() {
-      const pin = document.getElementById("inputPIN").value;
-      if (pin === "5351") {
+      if (document.getElementById("inputPIN").value === "5351") {
         document.getElementById("login").classList.add("hidden");
         document.getElementById("app").classList.remove("hidden");
         mostrarSeccion("usuarios");
-      } else {
-        mostrarError("❌ PIN incorrecto");
-      }
+      } else mostrarError("❌ PIN incorrecto");
     }
     function mostrarSeccion(sec) {
       document.querySelectorAll('[id^="seccion"]').forEach(el=>el.classList.add("hidden"));
@@ -179,30 +174,27 @@
       if(sec==="gastos") cargarGastos();
     }
 
-    // —— Usuarios ——
+    // — Usuarios —
     async function agregarUsuario(){
-      const nombre = document.getElementById("nuevoUsuario").value.trim();
-      if(!nombre) return mostrarError("⚠️ Ingresa un nombre");
-      await db.collection("usuarios").add({nombre});
+      const n = document.getElementById("nuevoUsuario").value.trim();
+      if(!n) return mostrarError("⚠️ Ingresa un nombre");
+      await db.collection("usuarios").add({nombre:n});
       document.getElementById("nuevoUsuario").value="";
       cargarUsuarios();
     }
     async function cargarUsuarios(){
       const snap = await db.collection("usuarios").get();
       document.getElementById("listaUsuarios").innerHTML =
-        snap.docs.map(d=>{
-          const n=d.data().nombre;
-          return `<div class="item"><span>${n}</span>
-            <button onclick="seleccionarUsuario('${n}')">✔️</button>
-          </div>`;
-        }).join("");
+        snap.docs.map(d=>`<div class="item"><span>${d.data().nombre}</span>
+          <button onclick="seleccionarUsuario('${d.data().nombre}')">✔️</button>
+        </div>`).join("");
     }
     function seleccionarUsuario(n){
       usuarioActivo=n;
       mostrarExito(`Usuario activo: ${n}`);
     }
 
-    // —— Conceptos ——
+    // — Conceptos —
     async function agregarConcepto(){
       const c = document.getElementById("nuevoConcepto").value.trim();
       if(!c) return mostrarError("⚠️ Ingresa un concepto");
@@ -216,44 +208,27 @@
         snap.docs.map(d=>`<div class="item">${d.data().nombre}</div>`).join("");
     }
 
-    // —— Preview Imagen ——
+    // — Preview imagen —
     function previewImage(e){
-      const file = e.target.files[0];
-      if(!file) return;
-      const reader = new FileReader();
-      reader.onload = evt=>{
-        imagenBase64 = evt.target.result;
-        document.getElementById("preview").src = imagenBase64;
+      const f=e.target.files[0];
+      if(!f) return;
+      const r=new FileReader();
+      r.onload=ev=>{
+        imagenBase64=ev.target.result;
+        document.getElementById("preview").src=imagenBase64;
       };
-      reader.readAsDataURL(file);
+      r.readAsDataURL(f);
     }
 
-    // —— Gastos IA ——
+    // — Procesar con IA via Worker —
     async function procesarConOpenAI(){
-      const txt = document.getElementById("descripcionGasto").value.trim();
+      const txt=document.getElementById("descripcionGasto").value.trim();
       if(!usuarioActivo) return mostrarError("⚠️ Selecciona un usuario");
       if(!txt)         return mostrarError("⚠️ Describe el gasto");
 
       try {
-        const resp = await axios.post(
-          OPENAI_URL,
-          {
-            model: "gpt-4.1-nano",
-            messages: [{
-              role:"user",
-              content:`Extrae en JSON { fecha:"dd/mm/aaaa", concepto:"", monto:0, proyecto:"" } del texto: "${txt}"`
-            }],
-            temperature: 0
-          },
-          {
-            headers: {
-              "Content-Type":"application/json",
-              "Authorization":`Bearer ${OPENAI_API_KEY}`
-            }
-          }
-        );
-
-        const datos = JSON.parse(resp.data.choices[0].message.content.trim());
+        const resp = await axios.post(OPENAI_PROXY, { texto: txt });
+        const datos = resp.data; // {fecha, concepto, monto, proyecto}
 
         await db.collection("gastos").add({
           fecha:    datos.fecha,
@@ -267,19 +242,19 @@
 
         document.getElementById("descripcionGasto").value="";
         document.getElementById("preview").src="";
-        imagenBase64 = null;
+        imagenBase64=null;
         mostrarExito("✅ Gasto procesado correctamente");
         cargarGastos();
-
       } catch(err){
         console.error(err);
-        mostrarError(`❌ ${err.response?.data?.error?.message||err.message}`);
+        mostrarError(`❌ ${err.response?.data?.error||err.message}`);
       }
     }
 
+    // — Historial de gastos —
     async function cargarGastos(){
-      const snap = await db.collection("gastos").orderBy("timestamp","desc").get();
-      document.getElementById("tablaGastos").innerHTML =
+      const snap=await db.collection("gastos").orderBy("timestamp","desc").get();
+      document.getElementById("tablaGastos").innerHTML=
         snap.docs.map(d=>{
           const r=d.data();
           return `<tr>
@@ -290,7 +265,6 @@
           </tr>`;
         }).join("");
     }
-
     async function eliminarGasto(id){
       if(confirm("¿Eliminar este gasto?")){
         await db.collection("gastos").doc(id).delete();
@@ -298,17 +272,9 @@
       }
     }
 
-    // —— Alertas ——
-    function mostrarError(msg){
-      const e=document.getElementById("mensajeError");
-      e.textContent=msg; e.style.display="block";
-      setTimeout(()=>e.style.display="none",5000);
-    }
-    function mostrarExito(msg){
-      const e=document.getElementById("mensajeExito");
-      e.textContent=msg; e.style.display="block";
-      setTimeout(()=>e.style.display="none",3000);
-    }
+    // — Alertas —
+    function mostrarError(m){const e=document.getElementById("mensajeError");e.textContent=m;e.style.display="block";setTimeout(()=>e.style.display="none",5000);}
+    function mostrarExito(m){const e=document.getElementById("mensajeExito");e.textContent=m;e.style.display="block";setTimeout(()=>e.style.display="none",3000);}
   </script>
 </body>
 </html>
