@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Gestor Inteligente Completo</title>
   <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
@@ -90,10 +90,8 @@
   <!-- Acceso -->
   <div id="login">
     <h2>🔐 Acceso al Sistema</h2>
-    <form onsubmit="event.preventDefault(); verificarPIN();">
-      <input type="password" id="inputPIN" placeholder="PIN (1111)">
-      <button type="submit">Ingresar</button>
-    </form>
+    <input type="password" id="inputPIN" placeholder="PIN (5351)">
+    <button onclick="verificarPIN()">Ingresar</button>
     <div id="mensajeError" class="alerta error"></div>
   </div>
 
@@ -159,8 +157,7 @@ const firebaseConfig = {
   appId: "1:243343663938:web:3482c365b6ce580e3cb969"
 };
 
-// Reemplaza con tu nueva/actual clave de OpenAI
-const OPENAI_API_KEY = "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";
+const OPENAI_API_KEY = "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";
 
 // Inicializar Firebase
 const app = firebase.initializeApp(firebaseConfig);
@@ -173,7 +170,7 @@ function verificarPIN() {
   const pin = document.getElementById("inputPIN").value;
   const mensajeError = document.getElementById("mensajeError");
   
-  if (pin === "1111") {
+  if (pin === "5351") {
     document.getElementById("login").classList.add("hidden");
     document.getElementById("app").classList.remove("hidden");
     mostrarSeccion('usuarios');
@@ -334,7 +331,7 @@ async function procesarConOpenAI() {
     const respuesta = await axios.post(
       'https://api.openai.com/v1/chat/completions',
       {
-        model: "gpt-4.1-nano",
+        model: "gpt-3.5-turbo",
         messages: [{
           role: "user",
           content: `Extrae en formato JSON: { fecha: "dd/mm/aaaa", concepto: "", monto: 0, proyecto: "" } del texto: "${texto}"`
@@ -343,13 +340,12 @@ async function procesarConOpenAI() {
       },
       {
         headers: {
-          'Authorization': \`Bearer \${OPENAI_API_KEY}\`,
+          'Authorization': `Bearer ${OPENAI_API_KEY}`,
           'Content-Type': 'application/json'
         }
       }
     );
 
-    // Respuesta de OpenAI en JSON
     const datos = JSON.parse(respuesta.data.choices[0].message.content);
     
     // Validar datos
