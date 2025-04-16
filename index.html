@@ -157,7 +157,7 @@ const firebaseConfig = {
   appId: "1:243343663938:web:3482c365b6ce580e3cb969"
 };
 
-// Reemplaza con tu clave válida (la tuya está aquí en duro)
+// Asegúrate de poner tu API Key válida aquí
 const OPENAI_API_KEY = "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";
 
 // Inicializar Firebase
@@ -311,7 +311,7 @@ async function eliminarConcepto(id) {
   }
 }
 
-// ================= GASTOS CON OPENAI ================= //
+// ================= GASTOS CON OPENAI (Endpoint /v1/responses) ================= //
 function previewImage(event) {
   const file = event.target.files[0];
   const reader = new FileReader();
@@ -328,30 +328,51 @@ async function procesarConOpenAI() {
   if (!texto) return mostrarError("⚠️ Describe el gasto");
   
   try {
-    // Consultar a OpenAI
+    // Esta llamada replica el cURL que mostraste
+    // https://api.openai.com/v1/responses
     const respuesta = await axios.post(
-      'https://api.openai.com/v1/chat/completions',
+      'https://api.openai.com/v1/responses',
       {
-        // Cambiamos a GPT-4
-        model: "gpt-4o-mini",
-        messages: [{
-          role: "user",
-          content: `Extrae en formato JSON: { fecha: "dd/mm/aaaa", concepto: "", monto: 0, proyecto: "" } del texto: "${texto}"`
-        }],
-        temperature: 0.3
+        // Ajusta el modelo si no tienes acceso a "gpt-4o-mini"
+        "model": "gpt-4o-mini",
+        "input": [
+          {
+            "type": "input_text",
+            "text": `Extrae en formato JSON: { fecha: "dd/mm/aaaa", concepto: "", monto: 0, proyecto: "" } del texto: "${texto}"`
+          }
+        ],
+        "text": { "format": { "type": "text" } },
+        "reasoning": {},
+        "tools": [],
+        "temperature": 1,
+        "max_output_tokens": 2048,
+        "top_p": 1,
+        "store": true
       },
       {
         headers: {
-          'Authorization': `Bearer ${OPENAI_API_KEY}`,
-          'Content-Type': 'application/json'
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${OPENAI_API_KEY}`
         }
       }
     );
 
-    // Parsear la respuesta de la IA
-    const datos = JSON.parse(respuesta.data.choices[0].message.content);
-    
-    // Validar datos
+    // Según la doc, la respuesta vendrá en .data.output[0].content[0].text
+    const outputItems = respuesta.data.output;
+    if (!outputItems || !outputItems.length) {
+      throw new Error("La IA no devolvió contenido (output vacío).");
+    }
+
+    const contentParts = outputItems[0]?.content?.[0];
+    if (!contentParts || contentParts.type !== "output_text") {
+      throw new Error("No encontré output_text en la respuesta de la IA.");
+    }
+
+    const rawText = contentParts.text.trim();
+    // Parsear el texto como JSON
+    const datos = JSON.parse(rawText);
+
+    // Validar que la IA devolvió los campos necesarios
     if (!datos.fecha || !datos.concepto || !datos.monto) {
       throw new Error("La IA no pudo extraer todos los datos requeridos");
     }
