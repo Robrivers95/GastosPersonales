@@ -333,7 +333,7 @@ async function procesarConOpenAI() {
       'https://api.openai.com/v1/chat/completions',
       {
         // Cambiamos a GPT-4
-        model: "gpt-4",
+        model: "gpt-4o-mini",
         messages: [{
           role: "user",
           content: `Extrae en formato JSON: { fecha: "dd/mm/aaaa", concepto: "", monto: 0, proyecto: "" } del texto: "${texto}"`
