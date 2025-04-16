@@ -91,7 +91,7 @@
   <div id="login">
     <h2>🔐 Acceso al Sistema</h2>
     <form onsubmit="event.preventDefault(); verificarPIN();">
-      <input type="password" id="inputPIN" placeholder="PIN (5351)">
+      <input type="password" id="inputPIN" placeholder="PIN (1111)">
       <button type="submit">Ingresar</button>
     </form>
     <div id="mensajeError" class="alerta error"></div>
@@ -173,7 +173,7 @@ function verificarPIN() {
   const pin = document.getElementById("inputPIN").value;
   const mensajeError = document.getElementById("mensajeError");
   
-  if (pin === "5351") {
+  if (pin === "1111") {
     document.getElementById("login").classList.add("hidden");
     document.getElementById("app").classList.remove("hidden");
     mostrarSeccion('usuarios');
