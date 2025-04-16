@@ -157,7 +157,7 @@ const firebaseConfig = {
   appId: "1:243343663938:web:3482c365b6ce580e3cb969"
 };
 
-// Asegúrate de poner tu API Key válida aquí
+// Pega aquí tu API key de OpenAI
 const OPENAI_API_KEY = "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";
 
 // Inicializar Firebase
@@ -183,7 +183,9 @@ function verificarPIN() {
 
 function mostrarSeccion(seccion) {
   document.querySelectorAll('[id^="seccion"]').forEach(el => el.classList.add('hidden'));
-  document.getElementById(seccion${seccion.charAt(0).toUpperCase() + seccion.slice(1)}).classList.remove('hidden');
+  // Corregimos la forma de construir el ID
+  document.getElementById(`seccion${seccion.charAt(0).toUpperCase() + seccion.slice(1)}`).classList.remove('hidden');
+  
   if (seccion === 'usuarios') cargarUsuarios();
   if (seccion === 'conceptos') cargarConceptos();
   if (seccion === 'gastos') cargarGastos();
@@ -200,7 +202,7 @@ async function agregarUsuario() {
     mostrarExito("✅ Usuario creado exitosamente");
     cargarUsuarios();
   } catch (error) {
-    mostrarError(❌ Error: ${error.message});
+    mostrarError(`❌ Error: ${error.message}`);
   }
 }
 
@@ -208,7 +210,7 @@ async function cargarUsuarios() {
   try {
     const snapshot = await db.collection("usuarios").get();
     const lista = document.getElementById("listaUsuarios");
-    lista.innerHTML = snapshot.docs.map(doc => 
+    lista.innerHTML = snapshot.docs.map(doc => `
       <div class="item">
         <span>${doc.data().nombre}</span>
         <div>
@@ -217,9 +219,9 @@ async function cargarUsuarios() {
           <button onclick="seleccionarUsuario('${doc.data().nombre}')">✔️ Seleccionar</button>
         </div>
       </div>
-    ).join('');
+    `).join('');
   } catch (error) {
-    mostrarError(❌ Error al cargar usuarios: ${error.message});
+    mostrarError(`❌ Error al cargar usuarios: ${error.message}`);
   }
 }
 
@@ -231,7 +233,7 @@ async function editarUsuario(id, nombreActual) {
       cargarUsuarios();
       mostrarExito("✅ Usuario actualizado");
     } catch (error) {
-      mostrarError(❌ Error: ${error.message});
+      mostrarError(`❌ Error: ${error.message}`);
     }
   }
 }
@@ -243,14 +245,14 @@ async function eliminarUsuario(id) {
       cargarUsuarios();
       mostrarExito("✅ Usuario eliminado");
     } catch (error) {
-      mostrarError(❌ Error: ${error.message});
+      mostrarError(`❌ Error: ${error.message}`);
     }
   }
 }
 
 function seleccionarUsuario(nombre) {
   usuarioActivo = nombre;
-  mostrarExito(✅ Usuario activo: ${nombre});
+  mostrarExito(`✅ Usuario activo: ${nombre}`);
 }
 
 // ================= CONCEPTOS ================= //
@@ -264,7 +266,7 @@ async function agregarConcepto() {
     mostrarExito("✅ Concepto creado exitosamente");
     cargarConceptos();
   } catch (error) {
-    mostrarError(❌ Error: ${error.message});
+    mostrarError(`❌ Error: ${error.message}`);
   }
 }
 
@@ -272,7 +274,7 @@ async function cargarConceptos() {
   try {
     const snapshot = await db.collection("conceptos").get();
     const lista = document.getElementById("listaConceptos");
-    lista.innerHTML = snapshot.docs.map(doc => 
+    lista.innerHTML = snapshot.docs.map(doc => `
       <div class="item">
         <span>${doc.data().nombre}</span>
         <div>
@@ -280,9 +282,9 @@ async function cargarConceptos() {
           <button onclick="eliminarConcepto('${doc.id}')">🗑</button>
         </div>
       </div>
-    ).join('');
+    `).join('');
   } catch (error) {
-    mostrarError(❌ Error al cargar conceptos: ${error.message});
+    mostrarError(`❌ Error al cargar conceptos: ${error.message}`);
   }
 }
 
@@ -294,7 +296,7 @@ async function editarConcepto(id, nombreActual) {
       cargarConceptos();
       mostrarExito("✅ Concepto actualizado");
     } catch (error) {
-      mostrarError(❌ Error: ${error.message});
+      mostrarError(`❌ Error: ${error.message}`);
     }
   }
 }
@@ -306,7 +308,7 @@ async function eliminarConcepto(id) {
       cargarConceptos();
       mostrarExito("✅ Concepto eliminado");
     } catch (error) {
-      mostrarError(❌ Error: ${error.message});
+      mostrarError(`❌ Error: ${error.message}`);
     }
   }
 }
@@ -328,17 +330,15 @@ async function procesarConOpenAI() {
   if (!texto) return mostrarError("⚠️ Describe el gasto");
   
   try {
-    // Esta llamada replica el cURL que mostraste
-    // https://api.openai.com/v1/responses
+    // Petición que imita tu snippet "curl" con /v1/responses
     const respuesta = await axios.post(
       'https://api.openai.com/v1/responses',
       {
-        // Ajusta el modelo si no tienes acceso a "gpt-4o-mini"
-        "model": "gpt-4o-mini",
+        "model": "gpt-4o-mini", // cuidado: puede no existir
         "input": [
           {
             "type": "input_text",
-            "text": Extrae en formato JSON: { fecha: "dd/mm/aaaa", concepto: "", monto: 0, proyecto: "" } del texto: "${texto}"
+            "text": `Extrae en formato JSON: { fecha: "dd/mm/aaaa", concepto: "", monto: 0, proyecto: "" } del texto: "${texto}"`
           }
         ],
         "text": { "format": { "type": "text" } },
@@ -352,27 +352,25 @@ async function procesarConOpenAI() {
       {
         headers: {
           "Content-Type": "application/json",
-          "Authorization": Bearer ${OPENAI_API_KEY}
+          "Authorization": `Bearer ${OPENAI_API_KEY}`
         }
       }
     );
 
-    // Según la doc, la respuesta vendrá en .data.output[0].content[0].text
+    // Respuesta en data.output[0].content[0].text
     const outputItems = respuesta.data.output;
     if (!outputItems || !outputItems.length) {
       throw new Error("La IA no devolvió contenido (output vacío).");
     }
 
-    const contentParts = outputItems[0]?.content?.[0];
+    const contentParts = outputItems[0].content?.[0];
     if (!contentParts || contentParts.type !== "output_text") {
       throw new Error("No encontré output_text en la respuesta de la IA.");
     }
 
     const rawText = contentParts.text.trim();
-    // Parsear el texto como JSON
     const datos = JSON.parse(rawText);
 
-    // Validar que la IA devolvió los campos necesarios
     if (!datos.fecha || !datos.concepto || !datos.monto) {
       throw new Error("La IA no pudo extraer todos los datos requeridos");
     }
@@ -385,7 +383,7 @@ async function procesarConOpenAI() {
       timestamp: firebase.firestore.FieldValue.serverTimestamp()
     });
 
-    // Limpiar formulario
+    // Limpiar
     document.getElementById("descripcionGasto").value = "";
     imagenBase64 = null;
     document.getElementById("preview").src = "";
@@ -394,7 +392,7 @@ async function procesarConOpenAI() {
     cargarGastos();
     
   } catch (error) {
-    mostrarError(❌ Error: ${error.response?.data?.error?.message || error.message});
+    mostrarError(`❌ Error: ${error.response?.data?.error?.message || error.message}`);
   }
 }
 
@@ -403,21 +401,21 @@ async function cargarGastos() {
     const snapshot = await db.collection("gastos").orderBy("timestamp", "desc").get();
     document.getElementById("tablaGastos").innerHTML = snapshot.docs.map(doc => {
       const data = doc.data();
-      return 
+      return `
         <tr>
           <td>${data.fecha}</td>
           <td>${data.concepto}</td>
           <td>$${data.monto}</td>
           <td>${data.proyecto}</td>
           <td>
-            ${data.imagen ? <img src="${data.imagen}" class="preview-img"> : ''}
+            ${data.imagen ? `<img src="${data.imagen}" class="preview-img">` : ''}
             <button onclick="eliminarGasto('${doc.id}')">🗑</button>
           </td>
         </tr>
-      ;
+      `;
     }).join('');
   } catch (error) {
-    mostrarError(❌ Error al cargar gastos: ${error.message});
+    mostrarError(`❌ Error al cargar gastos: ${error.message}`);
   }
 }
 
@@ -428,7 +426,7 @@ async function eliminarGasto(id) {
       cargarGastos();
       mostrarExito("✅ Gasto eliminado");
     } catch (error) {
-      mostrarError(❌ Error: ${error.message});
+      mostrarError(`❌ Error: ${error.message}`);
     }
   }
 }
