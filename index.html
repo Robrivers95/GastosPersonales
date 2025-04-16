@@ -239,7 +239,7 @@
       const resp = await axios.post(
         "https://api.openai.com/v1/chat/completions",
         {
-          model: "gpt-3.5-turbo",
+          model: "gpt-4.1-nano",
           messages: [{
             role:"user",
             content: `Extrae en JSON { fecha:"dd/mm/aaaa", concepto:"", monto:0, proyecto:"" } del texto: "${txt}"`
